@@ -3,18 +3,12 @@
   "title": "MerkleRootResponse",
   "type": "object",
   "required": [
-    "merkle_root",
-    "stage"
+    "merkle_root"
   ],
   "properties": {
     "merkle_root": {
       "description": "MerkleRoot is hex-encoded merkle root.",
       "type": "string"
-    },
-    "stage": {
-      "type": "integer",
-      "format": "uint8",
-      "minimum": 0.0
     }
   }
 }

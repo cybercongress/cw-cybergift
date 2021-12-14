@@ -35,8 +35,7 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     Config {},
-    MerkleRoot { stage: u8 },
-    LatestStage {},
+    MerkleRoot {},
     IsClaimed { stage: u8, address: String },
 }
 
@@ -49,14 +48,8 @@ pub struct ConfigResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct MerkleRootResponse {
-    pub stage: u8,
     /// MerkleRoot is hex-encoded merkle root.
     pub merkle_root: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct LatestStageResponse {
-    pub latest_stage: u8,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

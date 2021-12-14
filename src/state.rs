@@ -14,11 +14,8 @@ pub struct Config {
 pub const CONFIG_KEY: &str = "config";
 pub const CONFIG: Item<Config> = Item::new(CONFIG_KEY);
 
-pub const LATEST_STAGE_KEY: &str = "stage";
-pub const LATEST_STAGE: Item<u8> = Item::new(LATEST_STAGE_KEY);
-
 pub const MERKLE_ROOT_PREFIX: &str = "merkle_root";
-pub const MERKLE_ROOT: Map<U8Key, String> = Map::new(MERKLE_ROOT_PREFIX);
+pub const MERKLE_ROOT: Item<String> = Item::new(MERKLE_ROOT_PREFIX);
 
 pub const CLAIM_PREFIX: &str = "claim";
 pub const CLAIM: Map<(&Addr, U8Key), bool> = Map::new(CLAIM_PREFIX);

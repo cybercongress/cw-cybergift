@@ -12,10 +12,10 @@ use std::convert::TryInto;
 
 use crate::error::ContractError;
 use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, LatestStageResponse,
-    MerkleRootResponse, MigrateMsg, QueryMsg,
+    ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, MigrateMsg,
+    QueryMsg,
 };
-use crate::state::{Config, CLAIM, CONFIG, LATEST_STAGE, MERKLE_ROOT};
+use crate::state::{Config, CLAIM, CONFIG, MERKLE_ROOT};
 
 // Version info, for migration info
 const CONTRACT_NAME: &str = "crates.io:cyber-airdrop";
@@ -39,9 +39,6 @@ pub fn instantiate(
         cw20_token_address: deps.api.addr_validate(&msg.cw20_token_address)?,
     };
     CONFIG.save(deps.storage, &config)?;
-
-    let stage = 0;
-    LATEST_STAGE.save(deps.storage, &stage)?;
 
     Ok(Response::default())
 }
@@ -111,14 +108,10 @@ pub fn execute_register_merkle_root(
     let mut root_buf: [u8; 32] = [0; 32];
     hex::decode_to_slice(merkle_root.to_string(), &mut root_buf)?;
 
-    let stage = LATEST_STAGE.update(deps.storage, |stage| -> StdResult<_> { Ok(stage + 1) })?;
-
-    MERKLE_ROOT.save(deps.storage, U8Key::from(stage), &merkle_root)?;
-    LATEST_STAGE.save(deps.storage, &stage)?;
+    MERKLE_ROOT.save(deps.storage, &merkle_root)?;
 
     Ok(Response::new().add_attributes(vec![
         attr("action", "register_merkle_root"),
-        attr("stage", stage.to_string()),
         attr("merkle_root", merkle_root),
     ]))
 }
@@ -137,8 +130,11 @@ pub fn execute_claim(
         return Err(ContractError::Claimed {});
     }
 
+    // various checks
+    is_eligible()?;
+
     let config = CONFIG.load(deps.storage)?;
-    let merkle_root = MERKLE_ROOT.load(deps.storage, stage.into())?;
+    let merkle_root = MERKLE_ROOT.load(deps.storage)?;
 
     let user_input = format!("{}{}", info.sender, amount);
     let hash = sha2::Sha256::digest(user_input.as_bytes())
@@ -184,12 +180,15 @@ pub fn execute_claim(
     Ok(res)
 }
 
+fn is_eligible() -> StdResult<()> {
+    return Ok(());
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::MerkleRoot { stage } => to_binary(&query_merkle_root(deps, stage)?),
-        QueryMsg::LatestStage {} => to_binary(&query_latest_stage(deps)?),
+        QueryMsg::MerkleRoot {} => to_binary(&query_merkle_root(deps)?),
         QueryMsg::IsClaimed { stage, address } => {
             to_binary(&query_is_claimed(deps, stage, address)?)
         }
@@ -204,16 +203,9 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     })
 }
 
-pub fn query_merkle_root(deps: Deps, stage: u8) -> StdResult<MerkleRootResponse> {
-    let merkle_root = MERKLE_ROOT.load(deps.storage, U8Key::from(stage))?;
-    let resp = MerkleRootResponse { stage, merkle_root };
-
-    Ok(resp)
-}
-
-pub fn query_latest_stage(deps: Deps) -> StdResult<LatestStageResponse> {
-    let latest_stage = LATEST_STAGE.load(deps.storage)?;
-    let resp = LatestStageResponse { latest_stage };
+pub fn query_merkle_root(deps: Deps) -> StdResult<MerkleRootResponse> {
+    let merkle_root = MERKLE_ROOT.load(deps.storage)?;
+    let resp = MerkleRootResponse { merkle_root };
 
     Ok(resp)
 }
@@ -260,14 +252,10 @@ mod tests {
         let _res = instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
 
         // it worked, let's query the state
-        let res = query(deps.as_ref(), env.clone(), QueryMsg::Config {}).unwrap();
+        let res = query(deps.as_ref(), env, QueryMsg::Config {}).unwrap();
         let config: ConfigResponse = from_binary(&res).unwrap();
         assert_eq!("owner0000", config.owner.unwrap().as_str());
         assert_eq!("anchor0000", config.cw20_token_address.as_str());
-
-        let res = query(deps.as_ref(), env, QueryMsg::LatestStage {}).unwrap();
-        let latest_stage: LatestStageResponse = from_binary(&res).unwrap();
-        assert_eq!(0u8, latest_stage.latest_stage);
     }
 
     #[test]
@@ -341,18 +329,7 @@ mod tests {
             ]
         );
 
-        let res = query(deps.as_ref(), env.clone(), QueryMsg::LatestStage {}).unwrap();
-        let latest_stage: LatestStageResponse = from_binary(&res).unwrap();
-        assert_eq!(1u8, latest_stage.latest_stage);
-
-        let res = query(
-            deps.as_ref(),
-            env,
-            QueryMsg::MerkleRoot {
-                stage: latest_stage.latest_stage,
-            },
-        )
-        .unwrap();
+        let res = query(deps.as_ref(), env, QueryMsg::MerkleRoot {}).unwrap();
         let merkle_root: MerkleRootResponse = from_binary(&res).unwrap();
         assert_eq!(
             "634de21cde1044f41d90373733b0f0fb1c1c71f9652b905cdf159e73c4cf0d37".to_string(),
