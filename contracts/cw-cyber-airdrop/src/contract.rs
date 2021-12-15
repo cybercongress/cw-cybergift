@@ -170,7 +170,7 @@ pub fn execute_claim(
             funds: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: info.sender.to_string(),
-                amount,
+                amount: amount,
             })?,
         })
         .add_attributes(vec![
@@ -263,11 +263,12 @@ mod tests {
 
     #[test]
     fn update_config() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             owner: None,
             cw20_token_address: "anchor0000".to_string(),
+            initial_coefficient: Default::default()
         };
 
         let env = mock_env();
@@ -300,11 +301,12 @@ mod tests {
 
     #[test]
     fn register_merkle_root() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
             cw20_token_address: "anchor0000".to_string(),
+            initial_coefficient: Default::default()
         };
 
         let env = mock_env();
@@ -324,7 +326,6 @@ mod tests {
             res.attributes,
             vec![
                 attr("action", "register_merkle_root"),
-                attr("stage", "1"),
                 attr(
                     "merkle_root",
                     "634de21cde1044f41d90373733b0f0fb1c1c71f9652b905cdf159e73c4cf0d37"
@@ -354,12 +355,13 @@ mod tests {
     #[test]
     fn claim() {
         // Run test 1
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
         let test_data: Encoded = from_slice(TEST_DATA_1).unwrap();
 
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
             cw20_token_address: "token0000".to_string(),
+            initial_coefficient: Default::default()
         };
 
         let env = mock_env();
@@ -409,7 +411,6 @@ mod tests {
                     deps.as_ref(),
                     env.clone(),
                     QueryMsg::IsClaimed {
-                        stage: 1,
                         address: test_data.account
                     }
                 )
@@ -468,11 +469,12 @@ mod tests {
 
     #[test]
     fn owner_freeze() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
             cw20_token_address: "token0000".to_string(),
+            initial_coefficient: Default::default()
         };
 
         let env = mock_env();
