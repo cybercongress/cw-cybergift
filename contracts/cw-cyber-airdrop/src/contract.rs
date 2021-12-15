@@ -1,9 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    attr, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
-    WasmMsg,
-};
+use cosmwasm_std::{attr, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, WasmMsg, Decimal};
 use cw2::{get_contract_version, set_contract_version};
 use cw20::Cw20ExecuteMsg;
 use cw_storage_plus::U8Key;
@@ -15,11 +12,15 @@ use crate::msg::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, MigrateMsg,
     QueryMsg,
 };
-use crate::state::{Config, CLAIM, CONFIG, MERKLE_ROOT};
+use crate::state::{Config, CLAIM, CONFIG, MERKLE_ROOT, COEFFICIENT};
 
 // Version info, for migration info
-const CONTRACT_NAME: &str = "crates.io:cyber-airdrop";
+const CONTRACT_NAME: &str = "crates.io:cw-cyber-airdrop";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const COEFFICIENT_INITIAL: u128 = 100;
+const COEFFICIENT_UP: u128 = 20;
+const COEFFICIENT_DOWN: u128 = 5;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -39,6 +40,7 @@ pub fn instantiate(
         cw20_token_address: deps.api.addr_validate(&msg.cw20_token_address)?,
     };
     CONFIG.save(deps.storage, &config)?;
+    COEFFICIENT.save(deps.storage, &msg.initial_coefficient);
 
     Ok(Response::default())
 }
@@ -125,7 +127,7 @@ pub fn execute_claim(
     proof: Vec<String>,
 ) -> Result<Response, ContractError> {
     // verify not claimed
-    let claimed = CLAIM.may_load(deps.storage, (&info.sender, U8Key::from(stage)))?;
+    let claimed = CLAIM.may_load(deps.storage, &info.sender)?;
     if claimed.is_some() {
         return Err(ContractError::Claimed {});
     }
@@ -160,7 +162,7 @@ pub fn execute_claim(
     }
 
     // Update claim index to the current stage
-    CLAIM.save(deps.storage, (&info.sender, stage.into()), &true)?;
+    CLAIM.save(deps.storage, &info.sender, &true)?;
 
     let res = Response::new()
         .add_message(WasmMsg::Execute {
@@ -189,8 +191,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::MerkleRoot {} => to_binary(&query_merkle_root(deps)?),
-        QueryMsg::IsClaimed { stage, address } => {
-            to_binary(&query_is_claimed(deps, stage, address)?)
+        QueryMsg::IsClaimed { address } => {
+            to_binary(&query_is_claimed(deps, address)?)
         }
     }
 }
@@ -210,8 +212,8 @@ pub fn query_merkle_root(deps: Deps) -> StdResult<MerkleRootResponse> {
     Ok(resp)
 }
 
-pub fn query_is_claimed(deps: Deps, stage: u8, address: String) -> StdResult<IsClaimedResponse> {
-    let key: (&Addr, U8Key) = (&deps.api.addr_validate(&address)?, stage.into());
+pub fn query_is_claimed(deps: Deps, address: String) -> StdResult<IsClaimedResponse> {
+    let key = &deps.api.addr_validate(&address)?;
     let is_claimed = CLAIM.may_load(deps.storage, key)?.unwrap_or(false);
     let resp = IsClaimedResponse { is_claimed };
 
@@ -238,11 +240,12 @@ mod tests {
 
     #[test]
     fn proper_instantiation() {
-        let mut deps = mock_dependencies(&[]);
+        let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
             cw20_token_address: "anchor0000".to_string(),
+            initial_coefficient: Decimal::one()
         };
 
         let env = mock_env();

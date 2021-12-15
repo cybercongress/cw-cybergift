@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Decimal};
 use cw_storage_plus::{Item, Map, U8Key};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -18,4 +18,9 @@ pub const MERKLE_ROOT_PREFIX: &str = "merkle_root";
 pub const MERKLE_ROOT: Item<String> = Item::new(MERKLE_ROOT_PREFIX);
 
 pub const CLAIM_PREFIX: &str = "claim";
-pub const CLAIM: Map<(&Addr, U8Key), bool> = Map::new(CLAIM_PREFIX);
+pub const CLAIM: Map<&Addr, bool> = Map::new(CLAIM_PREFIX);
+
+pub const COEFFICIENT_PREFIX: &str = "coefficient";
+pub const COEFFICIENT: Item<Decimal> = Item::new(COEFFICIENT_PREFIX);
+
+
