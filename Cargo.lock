@@ -137,6 +137,7 @@ dependencies = [
 name = "cw-cyber-airdrop"
 version = "0.1.0"
 dependencies = [
+ "cosmwasm-crypto",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",

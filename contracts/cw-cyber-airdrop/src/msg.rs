@@ -8,7 +8,12 @@ pub struct InstantiateMsg {
     /// Owner if none set to info.sender.
     pub owner: Option<String>,
     pub cw20_token_address: String,
-    pub initial_coefficient: Decimal
+    pub initial_coefficient: Decimal,
+    pub airdrop_balance: Uint128,
+    pub coefficient_initial:Uint128,
+    pub coefficient_up: Uint128,
+    pub coefficient_down: Uint128,
+    pub coefficient: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
