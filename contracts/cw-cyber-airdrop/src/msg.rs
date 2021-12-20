@@ -1,16 +1,14 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Uint128, Decimal};
+use cosmwasm_std::{Uint128};
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct InstantiateMsg {
     /// Owner if none set to info.sender.
     pub owner: Option<String>,
-    pub cw20_token_address: String,
-    pub initial_coefficient: Decimal,
-    pub airdrop_balance: Uint128,
-    pub coefficient_initial:Uint128,
+    pub allowed_native: String,
+    pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
     pub coefficient: Uint128,
@@ -30,7 +28,6 @@ pub enum ExecuteMsg {
     },
     /// Claim does not check if contract has enough funds, owner must ensure it.
     Claim {
-        stage: u8,
         amount: Uint128,
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
@@ -49,7 +46,12 @@ pub enum QueryMsg {
 #[serde(rename_all = "snake_case")]
 pub struct ConfigResponse {
     pub owner: Option<String>,
-    pub cw20_token_address: String,
+    pub allowed_native: String,
+    pub current_balance: Uint128,
+    pub initial_balance: Uint128,
+    pub coefficient_up: Uint128,
+    pub coefficient_down: Uint128,
+    pub coefficient: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

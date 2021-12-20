@@ -1,11 +1,10 @@
 use std::convert::TryInto;
 
-use cosmwasm_std::{Addr, attr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdResult, to_binary, Uint128, WasmMsg};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use cosmwasm_std::{attr, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, WasmMsg, has_coins, Coin, BankMsg};
 use cw2::{get_contract_version, set_contract_version};
 use cw20::Cw20ExecuteMsg;
-use cw_storage_plus::U8Key;
 use sha2::Digest;
 
 use crate::error::ContractError;
@@ -13,12 +12,11 @@ use crate::msg::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, MigrateMsg,
     QueryMsg,
 };
-use crate::state::{CLAIM, Config, CONFIG, MERKLE_ROOT};
+use crate::state::{Config, CLAIM, CONFIG, MERKLE_ROOT};
 
 // Version info, for migration info
 const CONTRACT_NAME: &str = "crates.io:cw-cyber-airdrop";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -26,21 +24,25 @@ pub fn instantiate(
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let owner = msg
         .owner
         .map_or(Ok(info.sender), |o| deps.api.addr_validate(&o))?;
 
+    if !has_coins(&info.funds, &Coin{ denom: msg.allowed_native.clone(), amount: msg.initial_balance }){
+        return Err(ContractError::InvalidInput {})
+    }
+
     let config = Config {
         owner: Some(owner),
-        cw20_token_address: deps.api.addr_validate(&msg.cw20_token_address)?,
-        airdrop_balance: msg.airdrop_balance,
-        coefficient_initial: msg.coefficient_initial,
+        allowed_native: msg.allowed_native,
+        current_balance: msg.initial_balance,
+        initial_balance: msg.initial_balance,
         coefficient_up: msg.coefficient_up,
         coefficient_down: msg.coefficient_down,
-        coefficient: msg.coefficient
+        coefficient: msg.coefficient,
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -60,10 +62,9 @@ pub fn execute(
             execute_register_merkle_root(deps, env, info, merkle_root)
         }
         ExecuteMsg::Claim {
-            stage,
             amount,
             proof,
-        } => execute_claim(deps, env, info, stage, amount, proof),
+        } => execute_claim(deps, env, info, amount, proof),
     }
 }
 
@@ -124,7 +125,6 @@ pub fn execute_claim(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    stage: u8,
     amount: Uint128,
     proof: Vec<String>,
 ) -> Result<Response, ContractError> {
@@ -171,23 +171,23 @@ pub fn execute_claim(
     // Update coefficient
     let coefficient_up = config.coefficient_up;
     let coefficient_down = config.coefficient_down;
-    let new_coefficient = coefficient_up + (coefficient_down - coefficient_up) * claim_amount / config.coefficient_up;
+    let initial_balance = config.initial_balance;
+    let current_balance = config.current_balance;
+
+    let new_coefficient =
+        coefficient_up + (coefficient_down - coefficient_up) * initial_balance / current_balance;
 
     config.coefficient = new_coefficient;
-    CONFIG.save(deps.storage,&config);
+    config.current_balance = current_balance - amount;
+    CONFIG.save(deps.storage, &config)?;
 
     let res = Response::new()
-        .add_message(WasmMsg::Execute {
-            contract_addr: config.cw20_token_address.to_string(),
-            funds: vec![],
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                recipient: info.sender.to_string(),
-                amount: amount,
-            })?,
+        .add_message(BankMsg::Send{
+            to_address: info.sender.to_string(),
+            amount: vec![Coin{denom: config.allowed_native,  amount: claim_amount}]
         })
         .add_attributes(vec![
             attr("action", "claim"),
-            attr("stage", stage.to_string()),
             attr("address", info.sender),
             attr("amount", amount),
         ]);
@@ -195,8 +195,8 @@ pub fn execute_claim(
 }
 
 fn is_eligible(cfg: &Config, claim_amount: Uint128) -> Result<(), ContractError> {
-    if cfg.airdrop_balance < claim_amount {
-        return Err(ContractError::IsNotEligible {})
+    if cfg.initial_balance - cfg.current_balance < claim_amount {
+        return Err(ContractError::IsNotEligible {});
     }
     return Ok(());
 }
@@ -206,9 +206,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::MerkleRoot {} => to_binary(&query_merkle_root(deps)?),
-        QueryMsg::IsClaimed { address } => {
-            to_binary(&query_is_claimed(deps, address)?)
-        }
+        QueryMsg::IsClaimed { address } => to_binary(&query_is_claimed(deps, address)?),
     }
 }
 
@@ -216,7 +214,12 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
     Ok(ConfigResponse {
         owner: cfg.owner.map(|o| o.to_string()),
-        cw20_token_address: cfg.cw20_token_address.to_string(),
+        allowed_native: cfg.allowed_native,
+        current_balance: cfg.current_balance,
+        initial_balance: cfg.initial_balance,
+        coefficient_up: cfg.coefficient_up,
+        coefficient_down: cfg.coefficient_down,
+        coefficient: cfg.coefficient,
     })
 }
 

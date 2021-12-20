@@ -29,5 +29,5 @@ pub enum ContractError {
     CannotMigrate { previous_contract: String },
 
     #[error("Address is not eligible to claim airdrop")]
-    IsNotEligible{ },
+    IsNotEligible {},
 }

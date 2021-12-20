@@ -1,13 +1,17 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{CosmosMsg, from_binary, from_slice, SubMsg, Decimal, attr, Uint128, WasmMsg, to_binary};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{attr, from_binary, from_slice, to_binary, CosmosMsg, SubMsg, Uint128, WasmMsg, Coin, BankMsg};
     use serde::Deserialize;
 
     use crate::execute::*;
-    use crate::msg::{InstantiateMsg, ConfigResponse, ExecuteMsg, MerkleRootResponse, IsClaimedResponse, QueryMsg};
+    use crate::msg::{
+        ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, QueryMsg,
+    };
     use crate::ContractError;
     use cw20::Cw20ExecuteMsg;
+
+    const NATIVE_TOKEN: &str = "boot";
 
     #[test]
     fn proper_instantiation() {
@@ -15,13 +19,11 @@ mod tests {
 
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
-            cw20_token_address: "anchor0000".to_string(),
-            initial_coefficient: Decimal::one(),
-            airdrop_balance: Default::default(),
-            coefficient_initial: Default::default(),
+            allowed_native: NATIVE_TOKEN.to_string(),
+            initial_balance: Default::default(),
             coefficient_up: Default::default(),
             coefficient_down: Default::default(),
-            coefficient: Default::default()
+            coefficient: Default::default(),
         };
 
         let env = mock_env();
@@ -34,7 +36,7 @@ mod tests {
         let res = query(deps.as_ref(), env, QueryMsg::Config {}).unwrap();
         let config: ConfigResponse = from_binary(&res).unwrap();
         assert_eq!("owner0000", config.owner.unwrap().as_str());
-        assert_eq!("anchor0000", config.cw20_token_address.as_str());
+        assert_eq!("boot", config.allowed_native.as_str());
     }
 
     #[test]
@@ -43,17 +45,15 @@ mod tests {
 
         let msg = InstantiateMsg {
             owner: None,
-            cw20_token_address: "anchor0000".to_string(),
-            initial_coefficient: Default::default(),
-            airdrop_balance: Default::default(),
-            coefficient_initial: Default::default(),
+            allowed_native: NATIVE_TOKEN.to_string(),
+            initial_balance: Uint128::new(100),
             coefficient_up: Default::default(),
             coefficient_down: Default::default(),
-            coefficient: Default::default()
+            coefficient: Default::default(),
         };
 
         let env = mock_env();
-        let info = mock_info("owner0000", &[]);
+        let info = mock_info("owner0000", &[Coin{ denom: NATIVE_TOKEN.to_string(), amount: Uint128::new(100) }]);
         let _res = instantiate(deps.as_mut(), env, info, msg).unwrap();
 
         // update owner
@@ -86,17 +86,15 @@ mod tests {
 
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
-            cw20_token_address: "anchor0000".to_string(),
-            initial_coefficient: Default::default(),
-            airdrop_balance: Default::default(),
-            coefficient_initial: Default::default(),
+            allowed_native: NATIVE_TOKEN.to_string(),
+            initial_balance: Default::default(),
             coefficient_up: Default::default(),
             coefficient_down: Default::default(),
-            coefficient: Default::default()
+            coefficient: Default::default(),
         };
 
         let env = mock_env();
-        let info = mock_info("addr0000", &[]);
+        let info = mock_info("addr0000", &[Coin{ denom: NATIVE_TOKEN.to_string(), amount: Uint128::new(100) }]);
         let _res = instantiate(deps.as_mut(), env, info, msg).unwrap();
 
         // register new merkle root
@@ -146,17 +144,15 @@ mod tests {
 
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
-            cw20_token_address: "token0000".to_string(),
-            initial_coefficient: Default::default(),
-            airdrop_balance: Default::default(),
-            coefficient_initial: Default::default(),
+            allowed_native: NATIVE_TOKEN.to_string(),
+            initial_balance: Uint128::new(100000),
             coefficient_up: Default::default(),
             coefficient_down: Default::default(),
-            coefficient: Default::default()
+            coefficient: Default::default(),
         };
 
         let env = mock_env();
-        let info = mock_info("addr0000", &[]);
+        let info = mock_info("addr0000", &[Coin{ denom: NATIVE_TOKEN.to_string(), amount: Uint128::new(100000) }]);
         let _res = instantiate(deps.as_mut(), env, info, msg).unwrap();
 
         let env = mock_env();
@@ -168,21 +164,15 @@ mod tests {
 
         let msg = ExecuteMsg::Claim {
             amount: test_data.amount,
-            stage: 1u8,
             proof: test_data.proofs,
         };
 
         let env = mock_env();
         let info = mock_info(test_data.account.as_str(), &[]);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
-        let expected = SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: "token0000".to_string(),
-            funds: vec![],
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                recipient: test_data.account.clone(),
-                amount: test_data.amount,
-            })
-            .unwrap(),
+        let expected = SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
+            to_address: info.sender.clone().into_string(),
+            amount: vec![]
         }));
         assert_eq!(res.messages, vec![expected]);
 
@@ -190,7 +180,6 @@ mod tests {
             res.attributes,
             vec![
                 attr("action", "claim"),
-                attr("stage", "1"),
                 attr("address", test_data.account.clone()),
                 attr("amount", test_data.amount)
             ]
@@ -229,7 +218,6 @@ mod tests {
         // Claim next airdrop
         let msg = ExecuteMsg::Claim {
             amount: test_data.amount,
-            stage: 2u8,
             proof: test_data.proofs,
         };
 
@@ -264,13 +252,11 @@ mod tests {
 
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
-            cw20_token_address: "token0000".to_string(),
-            initial_coefficient: Default::default(),
-            airdrop_balance: Default::default(),
-            coefficient_initial: Default::default(),
+            allowed_native: NATIVE_TOKEN.to_string(),
+            initial_balance: Default::default(),
             coefficient_up: Default::default(),
             coefficient_down: Default::default(),
-            coefficient: Default::default()
+            coefficient: Default::default(),
         };
 
         let env = mock_env();

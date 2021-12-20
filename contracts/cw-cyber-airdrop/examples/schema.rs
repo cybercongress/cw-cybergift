@@ -2,9 +2,8 @@ use std::env::current_dir;
 use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use cyber_airdrop::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse,
-    MerkleRootResponse, QueryMsg,
+use cw_cyber_airdrop::msg::{
+    ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, QueryMsg,
 };
 
 fn main() {

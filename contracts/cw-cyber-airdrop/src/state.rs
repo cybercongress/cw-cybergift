@@ -1,16 +1,16 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Decimal, Uint128};
-use cw_storage_plus::{Item, Map, U8Key};
+use cosmwasm_std::{Addr, Uint128};
+use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     /// Owner If None set, contract is frozen.
     pub owner: Option<Addr>,
-    pub cw20_token_address: Addr,
-    pub airdrop_balance: Uint128,
-    pub coefficient_initial:Uint128,
+    pub allowed_native: String,
+    pub current_balance: Uint128,
+    pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
     pub coefficient: Uint128,
