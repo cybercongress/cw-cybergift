@@ -1,0 +1,10 @@
+{
+  "account": "0x748097fc1a3c8ea7ab83bc4e6eeebb5ff783a2e7",
+  "amount": "12000000000",
+  "root": "eb877bd8d5e337eb0ac02e600dc7bfd07d0da1e4af6cb8cd4d91bc2ca04e4b86",
+  "proofs": [
+      "25cb0fc0c7e5579aa96bc5084fbf4ec77f1b9c3dc6278c8e6f4e46e0b0261b79",
+      "51ba57e3c1a2a3f10a4fb16a0c0128d39bd101d83ba16a49cbe9b8b222850749",
+      "f7ec8ecf44feee889580bdcf5c01e940205c68d10eb28fb83a44f20d474a8fad"
+  ]
+}

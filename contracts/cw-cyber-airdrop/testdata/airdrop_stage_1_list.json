@@ -1,9 +1,9 @@
 [
-  { "address": "wasm1k9hwzxs889jpvd7env8z49gad3a3633vg350tq", "amount": "100"},
-  { "address": "wasm1uy9ucvgerneekxpnfwyfnpxvlsx5dzdpf0mzjd", "amount": "1010"},
-  { "address": "wasm1a4x6au55s0fusctyj2ulrxvfpmjcxa92k7ze2v", "amount": "10220"},
-  { "address": "wasm1ylna88nach9sn5n7qe7u5l6lh7dmt6lp2y63xx", "amount": "10333"},
-  { "address": "wasm1qzy8rg0f406uvvl54dlww6ptlh30303xq2u3xu", "amount": "10220"},
-  { "address": "wasm1xn46zz5m3fhymcrcwe82m0ac8ytt588dkpaeas", "amount": "10220"}
+  { "address": "0x748097fc1a3c8ea7ab83bc4e6eeebb5ff783a2e7", "amount": "12000000000"},
+  { "address": "0x7fc49137179a320e6064b2a3079dc49995739248", "amount": "103000"},
+  { "address": "0xa31877153b567e2a9b53cb7287335b65a85840eb", "amount": "1020"},
+  { "address": "cosmos1qjjjur5et06eszh82pfv7kvdnu3sur23x00t3g", "amount": "1010"},
+  { "address": "cosmos135ca8hdpy9sk0ntwqzpzsvatyl48ptx53zqkp9", "amount": "102200000"},
+  { "address": "cosmos1dl26ltlz763wxllmhrtymsm0mggmguw9fdvdrk", "amount": "10330003"}
 ]
 
