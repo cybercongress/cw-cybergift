@@ -3,12 +3,11 @@ use crate::state::{Config, CONFIG, MERKLE_ROOT};
 use crate::ContractError;
 use anyhow::Result;
 use cosmwasm_std::{
-    from_binary, Binary, Coin, Deps, DepsMut, MessageInfo, Record, StdError, StdResult, Uint128,
-    Uint64, VerificationError,
+    from_binary, from_slice, to_vec, Binary, Coin, Deps, DepsMut, MessageInfo, StdError, StdResult,
+    Uint128, Uint64, VerificationError,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::to_string;
 use sha2::Digest;
 use sha3::Keccak256;
 use std::convert::TryInto;
@@ -66,7 +65,8 @@ pub fn verify_eth(
     signature: Binary,
 ) -> Result<bool, ContractError> {
     let mut hasher = Keccak256::new();
-    let msg = to_string(&claim_msg).map_err(|err| ContractError::InvalidInput {})?;
+    let msg_raw = to_vec(claim_msg)?;
+    let msg: String = from_slice(&msg_raw)?;
     hasher.update(format!("\x19Ethereum Signed Message:\n{}", msg.len()));
     hasher.update(msg);
     let hash = hasher.finalize();

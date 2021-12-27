@@ -2,11 +2,9 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     attr, has_coins, to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, Uint128, WasmMsg,
+    StdResult, Uint128,
 };
 use cw2::{get_contract_version, set_contract_version};
-use cw20::Cw20ExecuteMsg;
-use sha3::Keccak256;
 
 use crate::error::ContractError;
 use crate::helpers;
