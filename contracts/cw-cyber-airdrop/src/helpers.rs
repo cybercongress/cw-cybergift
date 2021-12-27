@@ -8,7 +8,7 @@ use cosmwasm_std::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use sha2::Digest;
+use sha2::{Digest, Sha256};
 use sha3::Keccak256;
 use std::convert::TryInto;
 
@@ -126,7 +126,17 @@ pub fn verify_cosmos(
     claim_msg: &ClaimMsg,
     signature: Binary,
 ) -> Result<bool, ContractError> {
-    Ok(true)
+    let msg_raw = to_vec(claim_msg)?;
+    // Hashing
+    let hash = Sha256::digest(&msg_raw);
+
+    let sig: Signature = from_binary(&signature)?;
+    // Verification
+    deps.api
+        .secp256k1_verify(hash.as_ref(), signature.as_slice(), sig.pub_key.as_bytes())
+        .map_err(|err| ContractError::IsNotEligible {
+            msg: err.to_string(),
+        })
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
