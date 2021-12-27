@@ -1,7 +1,14 @@
+use crate::msg::ClaimMsg;
 use crate::state::{Config, CONFIG, MERKLE_ROOT};
-use anyhow::Result;
 use crate::ContractError;
-use cosmwasm_std::{Binary, Deps, DepsMut, from_binary, MessageInfo, StdError, StdResult, Uint128, VerificationError};
+use anyhow::Result;
+use cosmwasm_std::{
+    from_binary, Binary, Coin, Deps, DepsMut, MessageInfo, Record, StdError, StdResult, Uint128,
+    Uint64, VerificationError,
+};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use serde_json::to_string;
 use sha2::Digest;
 use sha3::Keccak256;
 use std::convert::TryInto;
@@ -48,14 +55,18 @@ pub fn verify_merkle_proof(
     let mut root_buf: [u8; 32] = [0; 32];
     hex::decode_to_slice(merkle_root, &mut root_buf)?;
     if root_buf != hash {
-        return Err(StdError::verification_err(VerificationError::GenericErr{}).into());
+        return Err(StdError::verification_err(VerificationError::GenericErr {}).into());
     }
     Ok(true)
 }
 
-pub fn verify_eth(deps: Deps, signer: &String, msg_raw: Binary, signature: Binary) -> Result<bool, ContractError> {
+pub fn verify_eth(
+    deps: Deps,
+    claim_msg: &ClaimMsg,
+    signature: Binary,
+) -> Result<bool, ContractError> {
     let mut hasher = Keccak256::new();
-    let msg: String= from_binary(&msg_raw)?;
+    let msg = to_string(&claim_msg).map_err(|err| ContractError::InvalidInput {})?;
     hasher.update(format!("\x19Ethereum Signed Message:\n{}", msg.len()));
     hasher.update(msg);
     let hash = hasher.finalize();
@@ -73,17 +84,16 @@ pub fn verify_eth(deps: Deps, signer: &String, msg_raw: Binary, signature: Binar
     // Verification
     let calculated_pubkey = deps.api.secp256k1_recover_pubkey(&hash, rs, recovery)?;
     let calculated_address = ethereum_address_raw(&calculated_pubkey)?;
-    if signer.as_bytes() != calculated_address {
+    if claim_msg.gift_claiming_address.as_bytes() != calculated_address {
         return Err(ContractError::IsNotEligible {
             msg: "signer address is not calculated addr".to_string(),
         });
     }
     deps.api
         .secp256k1_verify(&hash, rs, &calculated_pubkey)
-        .map_err(|err| ContractError::IsNotEligible { msg: err.to_string() })
-}
-pub fn verify_cosmos(deps: Deps, msg: String, signature: String) -> Result<bool, ContractError> {
-    Ok(true)
+        .map_err(|err| ContractError::IsNotEligible {
+            msg: err.to_string(),
+        })
 }
 
 fn get_recovery_param(v: u8) -> StdResult<u8> {
@@ -109,4 +119,40 @@ fn ethereum_address_raw(pubkey: &[u8]) -> StdResult<[u8; 20]> {
 
     let hash = Keccak256::digest(data);
     Ok(hash[hash.len() - 20..].try_into().unwrap())
+}
+
+pub fn verify_cosmos(
+    deps: Deps,
+    claim_msg: &ClaimMsg,
+    signature: Binary,
+) -> Result<bool, ContractError> {
+    Ok(true)
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Tx {
+    pub chain_id: String,
+    pub account_number: Uint64,
+    pub sequence: Uint64,
+    pub fee: Fee,
+    pub msgs: Vec<Msg>,
+    pub memo: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Fee {
+    pub gas: Uint128,
+    pub amount: Coin,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Msg {
+    pub signer: String,
+    pub data: Binary,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Signature {
+    pub pub_key: String,
+    pub signature: Binary,
 }

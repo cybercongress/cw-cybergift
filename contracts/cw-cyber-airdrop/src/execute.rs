@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -12,10 +10,10 @@ use sha3::Keccak256;
 
 use crate::error::ContractError;
 use crate::helpers;
-use crate::helpers::{update_coefficient, verify_merkle_proof};
+use crate::helpers::{update_coefficient, verify_cosmos, verify_merkle_proof};
 use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, MigrateMsg,
-    QueryMsg,
+    ClaimMsg, ClaimerType, ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse,
+    MerkleRootResponse, MigrateMsg, QueryMsg,
 };
 use crate::state::{Config, CLAIM, CONFIG, MERKLE_ROOT};
 
@@ -73,13 +71,11 @@ pub fn execute(
             execute_register_merkle_root(deps, env, info, merkle_root)
         }
         ExecuteMsg::Claim {
-            claimer_addr,
-            signer_addr,
-            msg,
+            claim_msg,
             signature,
             claim_amount,
             proof,
-        } => execute_claim(deps, env, info, claimer_addr, signer_addr, msg, signature, claim_amount, proof),
+        } => execute_claim(deps, env, info, claim_msg, signature, claim_amount, proof),
     }
 }
 
@@ -140,15 +136,13 @@ pub fn execute_claim(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    claimer_addr: String,
-    signer_addr: String,
-    msg: Binary,
+    claim_msg: ClaimMsg,
     signature: Binary,
     amount: Uint128,
     proof: Vec<String>,
 ) -> Result<Response, ContractError> {
     // verify not claimed
-    let claimed = CLAIM.may_load(deps.storage, claimer_addr.clone())?;
+    let claimed = CLAIM.may_load(deps.storage, claim_msg.target_addr.clone())?;
     if claimed.is_some() {
         return Err(ContractError::Claimed {});
     }
@@ -156,27 +150,19 @@ pub fn execute_claim(
     let mut config = CONFIG.load(deps.storage)?;
     let claim_amount = amount * config.coefficient;
 
-    is_eligible(
-        deps.as_ref(),
-        &config,
-        &claimer_addr,
-        &signer_addr,
-        msg,
-        signature,
-        claim_amount,
-    )?;
+    is_eligible(deps.as_ref(), &config, &claim_msg, signature, claim_amount)?;
 
     verify_merkle_proof(&deps, &info, amount, proof)?;
 
     // Update claim index to the current stage
-    CLAIM.save(deps.storage, claimer_addr.clone(), &true)?;
+    CLAIM.save(deps.storage, claim_msg.target_addr.clone(), &true)?;
 
     // Update coefficient
     update_coefficient(deps, amount, &mut config)?;
 
     let res = Response::new()
         .add_message(BankMsg::Send {
-            to_address: claimer_addr,
+            to_address: claim_msg.target_addr,
             amount: vec![Coin {
                 denom: config.allowed_native,
                 amount: claim_amount,
@@ -193,9 +179,7 @@ pub fn execute_claim(
 fn is_eligible(
     deps: Deps,
     cfg: &Config,
-    claimer_addr: &String,
-    signer_addr: &String,
-    msg: Binary,
+    claim_msg: &ClaimMsg,
     signature: Binary,
     claim_amount: Uint128,
 ) -> Result<bool, ContractError> {
@@ -204,9 +188,9 @@ fn is_eligible(
             msg: "".to_string(),
         });
     }
-    match claimer_addr {
-        addr if addr.starts_with("0x") => helpers::verify_eth(deps,signer_addr, msg, signature),
-        addr if addr.starts_with("cosmos1") => unimplemented!(),
+    match claim_msg.gift_claiming_address_type {
+        ClaimerType::Ethereum {} => helpers::verify_eth(deps, &claim_msg, signature),
+        ClaimerType::Cosmos => verify_cosmos(deps, &claim_msg, signature),
         _ => Err(ContractError::IsNotEligible {
             msg: "address prefix not allowed".to_string(),
         }),
