@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{RecoverPubkeyError, StdError, VerificationError};
 use hex::FromHexError;
 use thiserror::Error;
 
@@ -9,6 +9,12 @@ pub enum ContractError {
 
     #[error("{0}")]
     Hex(#[from] FromHexError),
+
+    #[error("{0}")]
+    Pubkey(#[from] RecoverPubkeyError),
+
+    #[error("{0}")]
+    Verification(#[from] VerificationError),
 
     #[error("Unauthorized")]
     Unauthorized {},
@@ -22,12 +28,9 @@ pub enum ContractError {
     #[error("Wrong length")]
     WrongLength {},
 
-    #[error("Verification failed")]
-    VerificationFailed {},
-
     #[error("Cannot migrate from different contract type: {previous_contract}")]
     CannotMigrate { previous_contract: String },
 
-    #[error("Address is not eligible to claim airdrop")]
-    IsNotEligible {},
+    #[error("Address is not eligible to claim airdrop, {msg}")]
+    IsNotEligible { msg: String },
 }

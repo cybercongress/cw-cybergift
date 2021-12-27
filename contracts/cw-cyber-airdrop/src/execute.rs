@@ -2,12 +2,17 @@ use std::convert::TryInto;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{attr, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, WasmMsg, has_coins, Coin, BankMsg};
+use cosmwasm_std::{
+    attr, has_coins, to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, Uint128, WasmMsg,
+};
 use cw2::{get_contract_version, set_contract_version};
 use cw20::Cw20ExecuteMsg;
-use sha2::Digest;
+use sha3::Keccak256;
 
 use crate::error::ContractError;
+use crate::helpers;
+use crate::helpers::{update_coefficient, verify_merkle_proof};
 use crate::msg::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, MigrateMsg,
     QueryMsg,
@@ -31,8 +36,14 @@ pub fn instantiate(
         .owner
         .map_or(Ok(info.sender), |o| deps.api.addr_validate(&o))?;
 
-    if !has_coins(&info.funds, &Coin{ denom: msg.allowed_native.clone(), amount: msg.initial_balance }){
-        return Err(ContractError::InvalidInput {})
+    if !has_coins(
+        &info.funds,
+        &Coin {
+            denom: msg.allowed_native.clone(),
+            amount: msg.initial_balance,
+        },
+    ) {
+        return Err(ContractError::InvalidInput {});
     }
 
     let config = Config {
@@ -62,9 +73,13 @@ pub fn execute(
             execute_register_merkle_root(deps, env, info, merkle_root)
         }
         ExecuteMsg::Claim {
-            amount,
+            claimer_addr,
+            signer_addr,
+            msg,
+            signature,
+            claim_amount,
             proof,
-        } => execute_claim(deps, env, info, amount, proof),
+        } => execute_claim(deps, env, info, claimer_addr, signer_addr, msg, signature, claim_amount, proof),
     }
 }
 
@@ -125,66 +140,47 @@ pub fn execute_claim(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
+    claimer_addr: String,
+    signer_addr: String,
+    msg: Binary,
+    signature: Binary,
     amount: Uint128,
     proof: Vec<String>,
 ) -> Result<Response, ContractError> {
     // verify not claimed
-    let claimed = CLAIM.may_load(deps.storage, &info.sender)?;
+    let claimed = CLAIM.may_load(deps.storage, claimer_addr.clone())?;
     if claimed.is_some() {
         return Err(ContractError::Claimed {});
     }
 
     let mut config = CONFIG.load(deps.storage)?;
-    // various checks
-    // TODO: coefficient calculation
     let claim_amount = amount * config.coefficient;
-    is_eligible(&config, claim_amount)?;
 
-    let merkle_root = MERKLE_ROOT.load(deps.storage)?;
+    is_eligible(
+        deps.as_ref(),
+        &config,
+        &claimer_addr,
+        &signer_addr,
+        msg,
+        signature,
+        claim_amount,
+    )?;
 
-    let user_input = format!("{}{}", info.sender, amount);
-    let hash = sha2::Sha256::digest(user_input.as_bytes())
-        .as_slice()
-        .try_into()
-        .map_err(|_| ContractError::WrongLength {})?;
-
-    let hash = proof.into_iter().try_fold(hash, |hash, p| {
-        let mut proof_buf = [0; 32];
-        hex::decode_to_slice(p, &mut proof_buf)?;
-        let mut hashes = [hash, proof_buf];
-        hashes.sort_unstable();
-        sha2::Sha256::digest(&hashes.concat())
-            .as_slice()
-            .try_into()
-            .map_err(|_| ContractError::WrongLength {})
-    })?;
-
-    let mut root_buf: [u8; 32] = [0; 32];
-    hex::decode_to_slice(merkle_root, &mut root_buf)?;
-    if root_buf != hash {
-        return Err(ContractError::VerificationFailed {});
-    }
+    verify_merkle_proof(&deps, &info, amount, proof)?;
 
     // Update claim index to the current stage
-    CLAIM.save(deps.storage, &info.sender, &true)?;
+    CLAIM.save(deps.storage, claimer_addr.clone(), &true)?;
 
     // Update coefficient
-    let coefficient_up = config.coefficient_up;
-    let coefficient_down = config.coefficient_down;
-    let initial_balance = config.initial_balance;
-    let current_balance = config.current_balance;
-
-    let new_coefficient =
-        coefficient_up + (coefficient_down - coefficient_up) * initial_balance / current_balance;
-
-    config.coefficient = new_coefficient;
-    config.current_balance = current_balance - amount;
-    CONFIG.save(deps.storage, &config)?;
+    update_coefficient(deps, amount, &mut config)?;
 
     let res = Response::new()
-        .add_message(BankMsg::Send{
-            to_address: info.sender.to_string(),
-            amount: vec![Coin{denom: config.allowed_native,  amount: claim_amount}]
+        .add_message(BankMsg::Send {
+            to_address: claimer_addr,
+            amount: vec![Coin {
+                denom: config.allowed_native,
+                amount: claim_amount,
+            }],
         })
         .add_attributes(vec![
             attr("action", "claim"),
@@ -194,11 +190,27 @@ pub fn execute_claim(
     Ok(res)
 }
 
-fn is_eligible(cfg: &Config, claim_amount: Uint128) -> Result<(), ContractError> {
-    if cfg.initial_balance - cfg.current_balance < claim_amount {
-        return Err(ContractError::IsNotEligible {});
+fn is_eligible(
+    deps: Deps,
+    cfg: &Config,
+    claimer_addr: &String,
+    signer_addr: &String,
+    msg: Binary,
+    signature: Binary,
+    claim_amount: Uint128,
+) -> Result<bool, ContractError> {
+    if cfg.current_balance < claim_amount {
+        return Err(ContractError::IsNotEligible {
+            msg: "".to_string(),
+        });
     }
-    return Ok(());
+    match claimer_addr {
+        addr if addr.starts_with("0x") => helpers::verify_eth(deps,signer_addr, msg, signature),
+        addr if addr.starts_with("cosmos1") => unimplemented!(),
+        _ => Err(ContractError::IsNotEligible {
+            msg: "address prefix not allowed".to_string(),
+        }),
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -231,8 +243,7 @@ pub fn query_merkle_root(deps: Deps) -> StdResult<MerkleRootResponse> {
 }
 
 pub fn query_is_claimed(deps: Deps, address: String) -> StdResult<IsClaimedResponse> {
-    let key = &deps.api.addr_validate(&address)?;
-    let is_claimed = CLAIM.may_load(deps.storage, key)?.unwrap_or(false);
+    let is_claimed = CLAIM.may_load(deps.storage, address)?.unwrap_or(false);
     let resp = IsClaimedResponse { is_claimed };
 
     Ok(resp)

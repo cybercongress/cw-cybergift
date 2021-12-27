@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Uint128};
+use cosmwasm_std::{Binary, Uint128};
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct InstantiateMsg {
@@ -28,7 +28,11 @@ pub enum ExecuteMsg {
     },
     /// Claim does not check if contract has enough funds, owner must ensure it.
     Claim {
-        amount: Uint128,
+        claimer_addr: String,
+        signer_addr: String,
+        msg: Binary,
+        signature: Binary,
+        claim_amount: Uint128,
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
     },

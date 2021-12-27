@@ -23,4 +23,4 @@ pub const MERKLE_ROOT_PREFIX: &str = "merkle_root";
 pub const MERKLE_ROOT: Item<String> = Item::new(MERKLE_ROOT_PREFIX);
 
 pub const CLAIM_PREFIX: &str = "claim";
-pub const CLAIM: Map<&Addr, bool> = Map::new(CLAIM_PREFIX);
+pub const CLAIM: Map<String, bool> = Map::new(CLAIM_PREFIX);

@@ -1,5 +1,6 @@
 mod error;
 pub mod execute;
+mod helpers;
 pub mod msg;
 pub mod state;
 mod tests;
