@@ -130,13 +130,17 @@ pub fn verify_cosmos(
     // Hashing
     let hash = Sha256::digest(&msg_raw);
 
-    let sig: Signature = from_binary(&signature)?;
     // Verification
-    deps.api
-        .secp256k1_verify(hash.as_ref(), signature.as_slice(), sig.pub_key.as_bytes())
-        .map_err(|err| ContractError::IsNotEligible {
-            msg: err.to_string(),
-        })
+    let sig: Signature = from_binary(&signature)?;
+    match sig {
+        Signature::Cosmos { pub_key, signature } =>
+            deps.api
+                .secp256k1_verify(hash.as_ref(), signature.as_slice(), pub_key.as_bytes())
+                .map_err(|err| ContractError::IsNotEligible {
+                    msg: err.to_string(),
+                }),
+        _ => Err(ContractError::InvalidInput {}),
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -160,9 +164,24 @@ pub struct Msg {
     pub signer: String,
     pub data: Binary,
 }
+/*
+{
+  "address": "0x0408522089294b8b3f0c9514086e6ae1df00394c",
+  "msg": "{\"nickname\":\"alice-ethereum\",\"avatar_cid\":\"QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV\",\"gift_claiming_address_type\":\"ethereum\",\"gift_claiming_address\":\"0x0408522089294b8b3f0c9514086e6ae1df00394c\",\"target_address\":\"bostrom1mww3recahc7s62a75qwnnhv7c4jsf22mph9h0f\",\"relay_reward\":\"0.01\"}",
+  "sig": "0xe2460f2111b44b0ff3e77f181950d651359c4c91a15923165f6cdeac42aeb8162319a18dc860cfbae77def32b7550fc14d211a70c7d7bd2179ef6c0b64ec19681c",
+  "version": "2"
 
+ */
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct Signature {
-    pub pub_key: String,
-    pub signature: Binary,
+pub enum Signature {
+    Eth {
+        address: String,
+        msg: String,
+        sig: String,
+        version: String
+    },
+    Cosmos {
+        pub_key: String,
+        signature: Binary,
+    }
 }

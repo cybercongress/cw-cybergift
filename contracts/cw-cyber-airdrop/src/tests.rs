@@ -1,17 +1,11 @@
-/*
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{
-        attr, from_binary, from_slice, to_binary, BankMsg, Coin, CosmosMsg, SubMsg, Uint128,
-        WasmMsg,
-    };
+    use cosmwasm_std::{attr, from_binary, from_slice, to_binary, BankMsg, Coin, CosmosMsg, SubMsg, Uint128, WasmMsg, Binary};
     use serde::Deserialize;
 
     use crate::execute::*;
-    use crate::msg::{
-        ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, QueryMsg,
-    };
+    use crate::msg::{ClaimMsg, ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, QueryMsg};
     use crate::ContractError;
     use cw20::Cw20ExecuteMsg;
 
@@ -141,22 +135,24 @@ mod tests {
         );
     }
 
-    const TEST_DATA_1: &[u8] = include_bytes!("../testdata/airdrop_stage_1_test_data.json");
-    const TEST_DATA_2: &[u8] = include_bytes!("../testdata/airdrop_stage_2_test_data.json");
+    const ETH_TEST: &[u8] = include_bytes!("../testdata/airdrop_stage_1_test_data_ethereum_address.json");
+    const COSMOS_TEST: &[u8] = include_bytes!("../testdata/airdrop_stage_1_test_data_cosmos_address.json");
 
     #[derive(Deserialize, Debug)]
     struct Encoded {
-        account: String,
-        amount: Uint128,
+        address: String,
+        claim_msg: Binary,
+        signature: Binary,
         root: String,
         proofs: Vec<String>,
+        amount: Uint128
     }
 
     #[test]
     fn claim() {
         // Run test 1
         let mut deps = mock_dependencies();
-        let test_data: Encoded = from_slice(TEST_DATA_1).unwrap();
+        let eth_test_data: Encoded = from_slice(ETH_TEST).unwrap();
 
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
@@ -180,18 +176,21 @@ mod tests {
         let env = mock_env();
         let info = mock_info("owner0000", &[]);
         let msg = ExecuteMsg::RegisterMerkleRoot {
-            merkle_root: test_data.root,
+            merkle_root: eth_test_data.root,
         };
         let _res = execute(deps.as_mut(), env, info, msg).unwrap();
 
+        let claim_msg = from_binary(&eth_test_data.claim_msg).unwrap();
+        let signature = from_binary(&eth_test_data.signature).unwrap();
         let msg = ExecuteMsg::Claim {
-            address: None,
-            amount: test_data.amount,
-            proof: test_data.proofs,
+            claim_msg,
+            signature,
+            proof: eth_test_data.proofs,
+            claim_amount: eth_test_data.amount
         };
 
         let env = mock_env();
-        let info = mock_info(test_data.account.as_str(), &[]);
+        let info = mock_info(eth_test_data.address.as_str(), &[]);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         let expected = SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
             to_address: info.sender.clone().into_string(),
@@ -203,8 +202,8 @@ mod tests {
             res.attributes,
             vec![
                 attr("action", "claim"),
-                attr("address", test_data.account.clone()),
-                attr("amount", test_data.amount)
+                attr("address", "random"),
+                attr("amount", eth_test_data.amount)
             ]
         );
 
@@ -214,7 +213,7 @@ mod tests {
                     deps.as_ref(),
                     env.clone(),
                     QueryMsg::IsClaimed {
-                        address: test_data.account
+                        address: eth_test_data.address
                     }
                 )
                 .unwrap()
@@ -225,7 +224,7 @@ mod tests {
 
         // Second test
 
-        let test_data: Encoded = from_slice(TEST_DATA_2).unwrap();
+        let cosmos_test_data: Encoded = from_slice(COSMOS_TEST).unwrap();
         // check claimed
         let res = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(res, ContractError::Claimed {});
@@ -234,26 +233,28 @@ mod tests {
         let env = mock_env();
         let info = mock_info("owner0000", &[]);
         let msg = ExecuteMsg::RegisterMerkleRoot {
-            merkle_root: test_data.root,
+            merkle_root: cosmos_test_data.root,
         };
         let _res = execute(deps.as_mut(), env, info, msg).unwrap();
 
-        // Claim next airdrop
+        let claim_msg = from_binary(&cosmos_test_data.claim_msg).unwrap();
+        let signature = from_binary(&cosmos_test_data.signature).unwrap();
         let msg = ExecuteMsg::Claim {
-            address: None,
-            amount: test_data.amount,
-            proof: test_data.proofs,
+            claim_msg,
+            signature,
+            proof: cosmos_test_data.proofs,
+            claim_amount: cosmos_test_data.amount
         };
 
         let env = mock_env();
-        let info = mock_info(test_data.account.as_str(), &[]);
+        let info = mock_info(cosmos_test_data.address.as_str(), &[]);
         let res = execute(deps.as_mut(), env, info, msg).unwrap();
         let expected: SubMsg<_> = SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "token0000".to_string(),
             funds: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                recipient: test_data.account.clone(),
-                amount: test_data.amount,
+                recipient: cosmos_test_data.address.clone(),
+                amount: cosmos_test_data.amount,
             })
             .unwrap(),
         }));
@@ -264,8 +265,8 @@ mod tests {
             vec![
                 attr("action", "claim"),
                 attr("stage", "2"),
-                attr("address", test_data.account),
-                attr("amount", test_data.amount)
+                attr("address", cosmos_test_data.address),
+                attr("amount", cosmos_test_data.amount)
             ]
         );
     }
@@ -335,6 +336,3 @@ mod tests {
         assert_eq!(res, ContractError::Unauthorized {});
     }
 }
-
-
- */

@@ -1,10 +1,10 @@
 {
-  "account": "cosmos1dl26ltlz763wxllmhrtymsm0mggmguw9fdvdrk",
-  "amount": "10330003",
-  "root": "eb877bd8d5e337eb0ac02e600dc7bfd07d0da1e4af6cb8cd4d91bc2ca04e4b86",
-  "proofs": [
-      "1de6eda5c541551ad3841ba8ba33090824155a972692b33ad2cc2c3e6c3c0320",
-      "92cdf04bd7f271e86a1760265925418e0a68c73ef17938bfb93ecc7f9e3187d6",
-      "f7ec8ecf44feee889580bdcf5c01e940205c68d10eb28fb83a44f20d474a8fad"
-  ]
+  "target_addr": "cosmos1dl26ltlz763wxllmhrtymsm0mggmguw9fdvdrk",
+  "claim_msg": "eyJuaWNrbmFtZSI6ImFsaWNlLWV0aGVyZXVtIiwiYXZhdGFyX2NpZCI6IlFtUlg4cVlnZVpvWU0zTTV6elFhV0VwVkZkcGluNkZ2Vlh2cDZSUFFLM291ZlYiLCJnaWZ0X2NsYWltaW5nX2FkZHJlc3NfdHlwZSI6ImV0aGVyZXVtIiwiZ2lmdF9jbGFpbWluZ19hZGRyZXNzIjoiMHgwNDA4NTIyMDg5Mjk0YjhiM2YwYzk1MTQwODZlNmFlMWRmMDAzOTRjIiwidGFyZ2V0X2FkZHJlc3MiOiJib3N0cm9tMW13dzNyZWNhaGM3czYyYTc1cXdubmh2N2M0anNmMjJtcGg5aDBmIiwicmVsYXlfcmV3YXJkIjoiMC4wMSJ9",
+    "signature": "eyJhZGRyZXNzIjoiMHgwNDA4NTIyMDg5Mjk0YjhiM2YwYzk1MTQwODZlNmFlMWRmMDAzOTRjIiwibXNnIjoie1wibmlja25hbWVcIjpcImFsaWNlLWV0aGVyZXVtXCIsXCJhdmF0YXJfY2lkXCI6XCJRbVJYOHFZZ2Vab1lNM001enpRYVdFcFZGZHBpbjZGdlZYdnA2UlBRSzNvdWZWXCIsXCJnaWZ0X2NsYWltaW5nX2FkZHJlc3NfdHlwZVwiOlwiZXRoZXJldW1cIixcImdpZnRfY2xhaW1pbmdfYWRkcmVzc1wiOlwiMHgwNDA4NTIyMDg5Mjk0YjhiM2YwYzk1MTQwODZlNmFlMWRmMDAzOTRjXCIsXCJ0YXJnZXRfYWRkcmVzc1wiOlwiYm9zdHJvbTFtd3czcmVjYWhjN3M2MmE3NXF3bm5odjdjNGpzZjIybXBoOWgwZlwiLFwicmVsYXlfcmV3YXJkXCI6XCIwLjAxXCJ9Iiwic2lnIjoiMHhlMjQ2MGYyMTExYjQ0YjBmZjNlNzdmMTgxOTUwZDY1MTM1OWM0YzkxYTE1OTIzMTY1ZjZjZGVhYzQyYWViODE2MjMxOWExOGRjODYwY2ZiYWU3N2RlZjMyYjc1NTBmYzE0ZDIxMWE3MGM3ZDdiZDIxNzllZjZjMGI2NGVjMTk2ODFjIiwidmVyc2lvbiI6IjIifQo=",
+    "amount": "10330003",
+    "root": "9e6198ee526c18b31b8eabb47fd0afffe9848836400d0d7c84f0879839a83689",
+    "proofs": [
+      "4f0dfaf1065ee9539ff6b6fdf2290ecf4f16fc84c48d36782fa2566735b26823"
+    ]
 }
