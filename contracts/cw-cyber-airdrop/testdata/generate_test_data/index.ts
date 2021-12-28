@@ -1,6 +1,14 @@
-import sha256 from 'crypto-js'
+import CryptoJS from "crypto-js";
+import sha256 from "crypto-js/sha256";
 import { MerkleTree } from "merkletreejs";
+import receivers from "./airdrop_stage_1_list.json";
 
+interface Encoding {
+  target_addr: string;
+  claim_msg: string;
+  signature: string;
+  amount: string;
+}
 class Airdrop {
   private tree: MerkleTree;
 
@@ -9,47 +17,31 @@ class Airdrop {
     this.tree = new MerkleTree(leaves, sha256, { sort: true });
   }
 
+  encode_data(data: Encoding): CryptoJS.lib.WordArray {
+    return sha256(
+      data.target_addr + data.claim_msg + data.signature + data.amount
+    );
+  }
+
   public getMerkleRoot(): string {
-    return this.tree.getHexRoot().replace('0x', '');
+    return this.tree.getRoot().toString("hex");
   }
 
   public getMerkleProof(data: Encoding): string[] {
     return this.tree
-      .getHexProof(this.encode_data(data))
-      .map((v) => v.replace('0x', ''));
+      .getProof(this.encode_data(data).toString())
+      .map((v) => v.data.toString("hex"));
   }
 
-  encode_data(data:Encoding): string {
-    return sha256(data.target_addr + data.claim_msg + data.signature + data.amount).toString()
-  }
-
-  public verify(
-    data: Encoding
-  ): boolean {
-    let hashBuf = Buffer.from(this.encode_data(data))
-
-    proof.forEach((proofElem) => {
-      const proofBuf = Buffer.from(proofElem, 'hex');
-      if (hashBuf < proofBuf) {
-        hashBuf = Buffer.from(sha256(Buffer.concat([hashBuf, proofBuf]).toString()));
-      } else {
-        hashBuf = Buffer.from(sha256(Buffer.concat([proofBuf, hashBuf]).toString()));
-      }
-    });
-
-    return this.getMerkleRoot() === hashBuf.toString('hex');
+  public verify(proof: [string], data: Encoding): boolean {
+    return this.tree.verify(
+      proof,
+      this.encode_data(data).toString(),
+      this.tree.getRoot()
+    );
   }
 }
 
-interface Encoding {
-  target_addr: string,
-  claim_msg: string,
-  signature: string,
-  amount: string,
-}
+let airdrop = new Airdrop(receivers);
 
-let receivers: Array<Encoding> = JSON.parse('../airdrop_stage_1_list.json');
-
-let airdrop = new Airdrop(receivers)
-
-console.log(airdrop.getMerkleRoot())
+console.log(airdrop.getMerkleRoot());

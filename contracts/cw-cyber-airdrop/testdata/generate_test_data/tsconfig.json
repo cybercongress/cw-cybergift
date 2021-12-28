@@ -23,11 +23,12 @@
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
+    "resolveJsonModule": true,
     "paths": {
       "*": ["src/*"]
     }
   },
   "include": [
-    "src/**/*"
+    "./**/*"
   ]
 }
