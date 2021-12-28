@@ -44,4 +44,5 @@ class Airdrop {
 
 let airdrop = new Airdrop(receivers);
 
-console.log(airdrop.getMerkleRoot());
+console.log(receivers[1])
+console.log(airdrop.getMerkleProof(receivers[1]));
