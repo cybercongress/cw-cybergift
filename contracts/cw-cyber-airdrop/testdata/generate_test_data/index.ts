@@ -4,7 +4,7 @@ import { MerkleTree } from "merkletreejs";
 import receivers from "./airdrop_stage_1_list.json";
 
 interface Encoding {
-  target_addr: string;
+  target_address: string;
   claim_msg: string;
   signature: string;
   amount: string;
@@ -19,7 +19,7 @@ class Airdrop {
 
   encode_data(data: Encoding): CryptoJS.lib.WordArray {
     return sha256(
-      data.target_addr + data.claim_msg + data.signature + data.amount
+      data.target_address + data.claim_msg + data.signature + data.amount
     );
   }
 
@@ -44,5 +44,8 @@ class Airdrop {
 
 let airdrop = new Airdrop(receivers);
 
+console.log(airdrop.getMerkleRoot());
+console.log(receivers[0])
+console.log(airdrop.getMerkleProof(receivers[0]));
 console.log(receivers[1])
 console.log(airdrop.getMerkleProof(receivers[1]));

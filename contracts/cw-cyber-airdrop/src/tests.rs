@@ -140,7 +140,7 @@ mod tests {
 
     #[derive(Deserialize, Debug)]
     struct Encoded {
-        address: String,
+        target_address: String,
         claim_msg: Binary,
         signature: Binary,
         root: String,
@@ -181,16 +181,15 @@ mod tests {
         let _res = execute(deps.as_mut(), env, info, msg).unwrap();
 
         let claim_msg = from_binary(&eth_test_data.claim_msg).unwrap();
-        let signature = from_binary(&eth_test_data.signature).unwrap();
         let msg = ExecuteMsg::Claim {
             claim_msg,
-            signature,
+            signature: eth_test_data.signature,
             proof: eth_test_data.proofs,
             claim_amount: eth_test_data.amount
         };
 
         let env = mock_env();
-        let info = mock_info(eth_test_data.address.as_str(), &[]);
+        let info = mock_info(eth_test_data.target_address.as_str(), &[]);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         let expected = SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
             to_address: info.sender.clone().into_string(),
@@ -213,7 +212,7 @@ mod tests {
                     deps.as_ref(),
                     env.clone(),
                     QueryMsg::IsClaimed {
-                        address: eth_test_data.address
+                        address: eth_test_data.target_address
                     }
                 )
                 .unwrap()
@@ -247,13 +246,13 @@ mod tests {
         };
 
         let env = mock_env();
-        let info = mock_info(cosmos_test_data.address.as_str(), &[]);
+        let info = mock_info(cosmos_test_data.target_address.as_str(), &[]);
         let res = execute(deps.as_mut(), env, info, msg).unwrap();
         let expected: SubMsg<_> = SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "token0000".to_string(),
             funds: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                recipient: cosmos_test_data.address.clone(),
+                recipient: cosmos_test_data.target_address.clone(),
                 amount: cosmos_test_data.amount,
             })
             .unwrap(),
@@ -265,7 +264,7 @@ mod tests {
             vec![
                 attr("action", "claim"),
                 attr("stage", "2"),
-                attr("address", cosmos_test_data.address),
+                attr("address", cosmos_test_data.target_address),
                 attr("amount", cosmos_test_data.amount)
             ]
         );

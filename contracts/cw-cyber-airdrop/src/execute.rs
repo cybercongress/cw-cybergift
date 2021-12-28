@@ -140,7 +140,7 @@ pub fn execute_claim(
     proof: Vec<String>,
 ) -> Result<Response, ContractError> {
     // verify not claimed
-    let claimed = CLAIM.may_load(deps.storage, claim_msg.target_addr.clone())?;
+    let claimed = CLAIM.may_load(deps.storage, claim_msg.target_address.clone())?;
     if claimed.is_some() {
         return Err(ContractError::Claimed {});
     }
@@ -153,14 +153,14 @@ pub fn execute_claim(
     verify_merkle_proof(&deps, &info, amount, proof)?;
 
     // Update claim index to the current stage
-    CLAIM.save(deps.storage, claim_msg.target_addr.clone(), &true)?;
+    CLAIM.save(deps.storage, claim_msg.target_address.clone(), &true)?;
 
     // Update coefficient
     update_coefficient(deps, amount, &mut config)?;
 
     let res = Response::new()
         .add_message(BankMsg::Send {
-            to_address: claim_msg.target_addr,
+            to_address: claim_msg.target_address,
             amount: vec![Coin {
                 denom: config.allowed_native,
                 amount: claim_amount,

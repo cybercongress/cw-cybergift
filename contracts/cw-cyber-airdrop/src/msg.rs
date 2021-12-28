@@ -42,15 +42,33 @@ pub struct ClaimMsg {
     pub avatar_cid: String,
     pub gift_claiming_address_type: ClaimerType,
     pub gift_claiming_address: String,
-    pub target_addr: String,
+    pub target_address: String,
     pub relay_reward: Decimal,
 }
+
+/*
+impl ToString for ClaimMsg {
+    fn to_string(&self) -> String {
+        format!("\{{}\}", self.target_address, )
+    }
+}
+
+ */
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ClaimerType {
     Ethereum,
     Cosmos,
+}
+
+impl ToString for ClaimerType {
+    fn to_string(&self) -> String {
+     match self {
+         ClaimerType::Ethereum => String::from("ethereum"),
+         ClaimerType::Cosmos => String::from("cosmos")
+     }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

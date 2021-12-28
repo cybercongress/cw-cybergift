@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sha3::Keccak256;
 use std::convert::TryInto;
+use serde_json::to_string;
 
 pub fn update_coefficient(deps: DepsMut, amount: Uint128, config: &mut Config) -> StdResult<()> {
     let coefficient_up = config.coefficient_up;
@@ -65,8 +66,10 @@ pub fn verify_eth(
     signature: Binary,
 ) -> Result<bool, ContractError> {
     let mut hasher = Keccak256::new();
-    let msg_raw = to_vec(claim_msg)?;
-    let msg: String = from_slice(&msg_raw)?;
+
+    let msg = to_string(claim_msg).map_err(|_| ContractError::InvalidInput {})?;
+
+    println!("{:?}", signature.to_string());
     hasher.update(format!("\x19Ethereum Signed Message:\n{}", msg.len()));
     hasher.update(msg);
     let hash = hasher.finalize();
