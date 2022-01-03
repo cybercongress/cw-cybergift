@@ -187,7 +187,7 @@ fn is_eligible(
         });
     }
     match claim_msg.gift_claiming_address_type {
-        ClaimerType::Ethereum {} => helpers::verify_eth(deps, &claim_msg, signature),
+        ClaimerType::Ethereum {} => helpers::verify_eth(deps, &claim_msg, &signature),
         ClaimerType::Cosmos => verify_cosmos(deps, &claim_msg, signature),
         _ => Err(ContractError::IsNotEligible {
             msg: "address prefix not allowed".to_string(),

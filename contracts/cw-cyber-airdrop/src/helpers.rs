@@ -3,7 +3,7 @@ use crate::state::{Config, CONFIG, MERKLE_ROOT};
 use crate::ContractError;
 use anyhow::Result;
 use cosmwasm_std::{
-    from_binary, from_slice, to_vec, Binary, Coin, Deps, DepsMut, MessageInfo, StdError, StdResult,
+    from_binary, to_vec, Binary, Coin, Deps, DepsMut, MessageInfo, StdError, StdResult,
     Uint128, Uint64, VerificationError,
 };
 use schemars::JsonSchema;
@@ -63,16 +63,16 @@ pub fn verify_merkle_proof(
 pub fn verify_eth(
     deps: Deps,
     claim_msg: &ClaimMsg,
-    signature: Binary,
+    signature: &[u8],
 ) -> Result<bool, ContractError> {
     let mut hasher = Keccak256::new();
 
     let msg = to_string(claim_msg).map_err(|_| ContractError::InvalidInput {})?;
 
-    println!("{:?}", signature.to_string());
     hasher.update(format!("\x19Ethereum Signed Message:\n{}", msg.len()));
     hasher.update(msg);
     let hash = hasher.finalize();
+    println!("{:?}", to_string(signature).unwrap());
     // Decompose signature
     let (v, rs) = match signature.split_last() {
         Some(pair) => pair,
@@ -82,6 +82,7 @@ pub fn verify_eth(
             })
         }
     };
+    println!("{:?}", v);
     let recovery = get_recovery_param(*v)?;
 
     // Verification

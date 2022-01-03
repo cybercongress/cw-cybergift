@@ -5,7 +5,7 @@ mod tests {
     use serde::Deserialize;
 
     use crate::execute::*;
-    use crate::msg::{ClaimMsg, ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, QueryMsg};
+    use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, QueryMsg};
     use crate::ContractError;
     use cw20::Cw20ExecuteMsg;
 

@@ -17,7 +17,7 @@
 }
 
 ## Sig
-0xe2460f2111b44b0ff3e77f181950d651359c4c91a15923165f6cdeac42aeb8162319a18dc860cfbae77def32b7550fc14d211a70c7d7bd2179ef6c0b64ec19681c
+e2460f2111b44b0ff3e77f181950d651359c4c91a15923165f6cdeac42aeb8162319a18dc860cfbae77def32b7550fc14d211a70c7d7bd2179ef6c0b64ec19681c
 
 ------------------------
 
@@ -27,7 +27,7 @@
 
 {"nickname":"bob-cosmos","avatar_cid":"QmU1Nf2opJGZGNWmqxAa9bb8X6wVSHRBDCY6nbm3RmVXGb","gift_claiming_address_type":"cosmos","gift_claiming_address":"cosmos1qjjjur5et06eszh82pfv7kvdnu3sur23x00t3g","target_address":"bostrom1qjjjur5et06eszh82pfv7kvdnu3sur239umc00","relay_reward":"0.01"}
 
-## Message with base64 input 
+## Message with base64 input
 
 {
   "chain_id": "",
