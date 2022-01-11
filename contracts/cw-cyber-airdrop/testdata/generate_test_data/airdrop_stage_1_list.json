@@ -1,14 +1,10 @@
 [
   {
-    "target_address": "0x748097fc1a3c8ea7ab83bc4e6eeebb5ff783a2e7",
-    "claim_msg": "eyJuaWNrbmFtZSI6ImFsaWNlLWV0aGVyZXVtIiwiYXZhdGFyX2NpZCI6IlFtUlg4cVlnZVpvWU0zTTV6elFhV0VwVkZkcGluNkZ2Vlh2cDZSUFFLM291ZlYiLCJnaWZ0X2NsYWltaW5nX2FkZHJlc3NfdHlwZSI6ImV0aGVyZXVtIiwiZ2lmdF9jbGFpbWluZ19hZGRyZXNzIjoiMHgwNDA4NTIyMDg5Mjk0YjhiM2YwYzk1MTQwODZlNmFlMWRmMDAzOTRjIiwidGFyZ2V0X2FkZHJlc3MiOiJib3N0cm9tMW13dzNyZWNhaGM3czYyYTc1cXdubmh2N2M0anNmMjJtcGg5aDBmIiwicmVsYXlfcmV3YXJkIjoiMC4wMSJ9",
-    "signature": "e2460f2111b44b0ff3e77f181950d651359c4c91a15923165f6cdeac42aeb8162319a18dc860cfbae77def32b7550fc14d211a70c7d7bd2179ef6c0b64ec19681c",
+    "target_address": "0x0408522089294b8b3f0c9514086e6ae1df00394c",
     "amount": "12000000000"
   },
   {
-    "target_address": "cosmos1dl26ltlz763wxllmhrtymsm0mggmguw9fdvdrk",
-    "claim_msg": "eyJuaWNrbmFtZSI6ImJvYi1jb3Ntb3MiLCJhdmF0YXJfY2lkIjoiUW1VMU5mMm9wSkdaR05XbXF4QWE5YmI4WDZ3VlNIUkJEQ1k2bmJtM1JtVlhHYiIsImdpZnRfY2xhaW1pbmdfYWRkcmVzc190eXBlIjoiY29zbW9zIiwiZ2lmdF9jbGFpbWluZ19hZGRyZXNzIjoiY29zbW9zMXFqamp1cjVldDA2ZXN6aDgycGZ2N2t2ZG51M3N1cjIzeDAwdDNnIiwidGFyZ2V0X2FkZHJlc3MiOiJib3N0cm9tMXFqamp1cjVldDA2ZXN6aDgycGZ2N2t2ZG51M3N1cjIzOXVtYzAwIiwicmVsYXlfcmV3YXJkIjoiMC4wMSJ9Cg==",
-    "signature": "CvMkqkQHVPV3DTyVErth16OdTjAwqQD6t+r9ImSpdwUZFin+UPeGSfH9hhuAmqYAp4CffhNNSEisdfzwwvlN/w==",
+    "target_address": "cosmos1qjjjur5et06eszh82pfv7kvdnu3sur23x00t3g",
     "amount": "10330003"
   }
 ]

@@ -1,9 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    attr, has_coins, to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, Uint128,
-};
+use cosmwasm_std::{attr, has_coins, to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, Decimal};
 use cw2::{get_contract_version, set_contract_version};
 
 use crate::error::ContractError;
@@ -49,7 +46,7 @@ pub fn instantiate(
         initial_balance: msg.initial_balance,
         coefficient_up: msg.coefficient_up,
         coefficient_down: msg.coefficient_down,
-        coefficient: msg.coefficient,
+        coefficient: Decimal::from_ratio(msg.coefficient, Uint128::new(1)),
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -148,19 +145,25 @@ pub fn execute_claim(
     let mut config = CONFIG.load(deps.storage)?;
     let claim_amount = amount * config.coefficient;
 
+    // TODO delete after debug
+    println!("{:?}", "execute_claim");
+    println!("{:?}", config.coefficient);
+    println!("{:?}", claim_amount.to_string());
+
     is_eligible(deps.as_ref(), &config, &claim_msg, signature, claim_amount)?;
 
-    verify_merkle_proof(&deps, &info, amount, proof)?;
+    verify_merkle_proof(&deps, &info, claim_msg.clone().gift_claiming_address, amount, proof)?;
 
     // Update claim index to the current stage
     CLAIM.save(deps.storage, claim_msg.target_address.clone(), &true)?;
 
     // Update coefficient
+    // let balance = deps.querier.query_balance(env.contract.address, NATIVE_TOKEN)?;
     update_coefficient(deps, amount, &mut config)?;
 
     let res = Response::new()
         .add_message(BankMsg::Send {
-            to_address: claim_msg.target_address,
+            to_address: claim_msg.clone().target_address,
             amount: vec![Coin {
                 denom: config.allowed_native,
                 amount: claim_amount,
@@ -168,8 +171,10 @@ pub fn execute_claim(
         })
         .add_attributes(vec![
             attr("action", "claim"),
-            attr("address", info.sender),
-            attr("amount", amount),
+            attr("original", claim_msg.clone().gift_claiming_address),
+            attr("type", claim_msg.clone().gift_claiming_address_type.to_string()),
+            attr("target", claim_msg.clone().target_address),
+            attr("amount", claim_amount),
         ]);
     Ok(res)
 }
@@ -187,7 +192,7 @@ fn is_eligible(
         });
     }
     match claim_msg.gift_claiming_address_type {
-        ClaimerType::Ethereum {} => helpers::verify_eth(deps, &claim_msg, &signature),
+        ClaimerType::Ethereum {} => helpers::verify_eth(deps, &claim_msg, signature),
         ClaimerType::Cosmos => verify_cosmos(deps, &claim_msg, signature),
         _ => Err(ContractError::IsNotEligible {
             msg: "address prefix not allowed".to_string(),
