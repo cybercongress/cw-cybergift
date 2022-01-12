@@ -13,7 +13,7 @@ use crate::msg::{
 use crate::state::{Config, CLAIM, CONFIG, MERKLE_ROOT};
 
 // Version info, for migration info
-const CONTRACT_NAME: &str = "crates.io:cw-cyber-airdrop";
+const CONTRACT_NAME: &str = "crates.io:cw-cyber-gift";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]

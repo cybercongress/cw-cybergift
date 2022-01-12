@@ -147,7 +147,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-cyber-airdrop"
+name = "cw-cyber-gift"
 version = "0.1.0"
 dependencies = [
  "anyhow",
