@@ -5,8 +5,6 @@ import receivers from "./airdrop_stage_1_list.json";
 
 interface Encoding {
   target_address: string;
-  claim_msg: string;
-  signature: string;
   amount: string;
 }
 class Airdrop {
@@ -19,7 +17,7 @@ class Airdrop {
 
   encode_data(data: Encoding): CryptoJS.lib.WordArray {
     return sha256(
-      data.target_address + data.claim_msg + data.signature + data.amount
+      data.target_address + data.amount
     );
   }
 

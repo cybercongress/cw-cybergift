@@ -88,7 +88,7 @@ pub struct ConfigResponse {
     pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
-    pub coefficient: Uint128,
+    pub coefficient: Decimal,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
