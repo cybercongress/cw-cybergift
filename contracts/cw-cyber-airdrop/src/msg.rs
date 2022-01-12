@@ -2,25 +2,35 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{Binary, Decimal, Uint128};
+use cw_utils::{Expiration};
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct InstantiateMsg {
     /// Owner if none set to info.sender.
     pub owner: Option<String>,
+    pub passport: String,
     pub allowed_native: String,
     pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
     pub coefficient: Uint128,
+    pub target: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    UpdateConfig {
+    UpdateOwner {
         /// NewOwner if non sent, contract gets locked. Recipients can receive airdrops
         /// but owner cannot register new stages.
         new_owner: Option<String>,
+    },
+    /// Allows to easily debug
+    UpdatePassport {
+        new_passport: String,
+    },
+    UpdateTarget {
+        new_target: u64,
     },
     RegisterMerkleRoot {
         /// MerkleRoot is hex-encoded merkle root.
@@ -34,6 +44,7 @@ pub enum ExecuteMsg {
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
     },
+    Release {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -77,18 +88,23 @@ pub enum QueryMsg {
     Config {},
     MerkleRoot {},
     IsClaimed { address: String },
+    ReleaseState { address: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct ConfigResponse {
     pub owner: Option<String>,
+    pub passport: String,
+    pub target: u64,
     pub allowed_native: String,
     pub current_balance: Uint128,
     pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
     pub coefficient: Decimal,
+    pub claims: u64,
+    pub releases: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -100,6 +116,13 @@ pub struct MerkleRootResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct IsClaimedResponse {
     pub is_claimed: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ReleaseStateResponse {
+    pub balance_claim: Uint128,
+    pub stage: u64,
+    pub stage_expiration: Expiration
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

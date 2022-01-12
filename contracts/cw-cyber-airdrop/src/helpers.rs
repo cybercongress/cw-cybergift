@@ -2,7 +2,7 @@ use crate::msg::ClaimMsg;
 use crate::state::{Config, CONFIG, MERKLE_ROOT};
 use crate::ContractError;
 use anyhow::Result;
-use cosmwasm_std::{from_binary, to_vec, Binary, Deps, DepsMut, MessageInfo, StdError, StdResult, Uint128, VerificationError, Decimal};
+use cosmwasm_std::{from_binary, to_vec, Binary, Deps, DepsMut, MessageInfo, StdError, StdResult, Uint128, VerificationError, Decimal, Storage};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -11,7 +11,7 @@ use std::convert::TryInto;
 use serde_json::to_string;
 use std::ops::{Add, Mul, Sub};
 
-pub fn update_coefficient(deps: DepsMut, amount: Uint128, config: &mut Config) -> StdResult<()> {
+pub fn update_coefficient(store: &mut dyn Storage, amount: Uint128, config: &mut Config) -> StdResult<()> {
     let coefficient_up = config.coefficient_up;
     let coefficient_down = config.coefficient_down;
     let initial_balance = config.initial_balance;
@@ -38,7 +38,7 @@ pub fn update_coefficient(deps: DepsMut, amount: Uint128, config: &mut Config) -
 
     config.coefficient = new_coefficient;
     config.current_balance = current_balance - amount;
-    CONFIG.save(deps.storage, &config)
+    CONFIG.save(store, &config)
 }
 
 pub fn verify_merkle_proof(
@@ -75,7 +75,7 @@ pub fn verify_merkle_proof(
     Ok(true)
 }
 
-pub fn verify_eth(
+pub fn verify_ethereum(
     deps: Deps,
     claim_msg: &ClaimMsg,
     signature: Binary,
@@ -88,6 +88,7 @@ pub fn verify_eth(
     hasher.update(msg);
     let hash = hasher.finalize();
     let sig = decode_signature(&signature.clone().to_string())?;
+
     // Decompose signature
     let (v, rs) = match sig.split_last() {
         Some(pair) => pair,
@@ -174,10 +175,9 @@ pub fn verify_cosmos(
     signature: Binary,
 ) -> Result<bool, ContractError> {
     let msg_raw = to_vec(claim_msg)?;
-    // Hashing
     let hash = Sha256::digest(&msg_raw);
-    // Verification
     let sig:CosmosSignature = from_binary(&signature).unwrap();
+
     let result = deps.api
         .secp256k1_verify(hash.as_ref(), sig.signature.as_slice(), sig.pub_key.as_slice())
         .map_err(|err| ContractError::IsNotEligible {
@@ -185,6 +185,11 @@ pub fn verify_cosmos(
         });
     return result;
 }
+
+
+/*
+{"pub_key": "Aoz4+N8ckpDiz4oOKKKVERJGeS49nOgGrXw0s0dkymDr","signature":"CvMkqkQHVPV3DTyVErth16OdTjAwqQD6t+r9ImSpdwUZFin+UPeGSfH9hhuAmqYAp4CffhNNSEisdfzwwvlN/w=="}
+ */
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct CosmosSignature {
