@@ -1,4 +1,4 @@
-use cosmwasm_std::{RecoverPubkeyError, StdError, VerificationError};
+use cosmwasm_std::{OverflowError, RecoverPubkeyError, StdError, VerificationError};
 use hex::FromHexError;
 use thiserror::Error;
 
@@ -16,6 +16,9 @@ pub enum ContractError {
     #[error("{0}")]
     Verification(#[from] VerificationError),
 
+    #[error("{0}")]
+    Overflow(#[from] OverflowError),
+
     #[error("Unauthorized")]
     Unauthorized {},
 
@@ -25,6 +28,21 @@ pub enum ContractError {
     #[error("Already claimed")]
     Claimed {},
 
+    #[error("Not claimed")]
+    NotClaimed {},
+
+    #[error("Not activated")]
+    NotActivated {},
+
+    #[error("Stage released")]
+    StageReleased {},
+
+    #[error("Gift released")]
+    GiftReleased {},
+
+    #[error("Empty release state")]
+    EmptyReleaseState {},
+
     #[error("Wrong length")]
     WrongLength {},
 
@@ -33,4 +51,7 @@ pub enum ContractError {
 
     #[error("Address is not eligible to claim airdrop, {msg}")]
     IsNotEligible { msg: String },
+
+    #[error("Gift is over")]
+    GiftIsOver {},
 }
