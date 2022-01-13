@@ -47,7 +47,7 @@ pub fn instantiate(
 
     let config = Config {
         owner: Some(owner),
-        passport: deps.api.addr_validate(&msg.passport)?,
+        passport_addr: deps.api.addr_validate(&msg.passport)?,
         target_claim: msg.target_claim,
         allowed_native: msg.allowed_native,
         current_balance: msg.initial_balance,
@@ -72,7 +72,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::UpdateOwner { new_owner } => execute_update_owner(deps, env, info, new_owner),
-        ExecuteMsg::UpdatePassport { new_passport } => {
+        ExecuteMsg::UpdatePassportAddr { new_passport_addr: new_passport } => {
             execute_update_passport(deps, env, info, new_passport)
         }
         ExecuteMsg::UpdateTarget { new_target } => {
@@ -131,7 +131,7 @@ pub fn execute_update_passport(
     let passport = deps.api.addr_validate(&new_passport)?;
 
     CONFIG.update(deps.storage, |mut exists| -> StdResult<_> {
-        exists.passport = passport;
+        exists.passport_addr = passport;
         Ok(exists)
     })?;
 
@@ -366,7 +366,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
     Ok(ConfigResponse {
         owner: cfg.owner.map(|o| o.to_string()),
-        passport: cfg.passport.to_string(),
+        passport: cfg.passport_addr.to_string(),
         target_claim: cfg.target_claim,
         allowed_native: cfg.allowed_native,
         current_balance: cfg.current_balance,

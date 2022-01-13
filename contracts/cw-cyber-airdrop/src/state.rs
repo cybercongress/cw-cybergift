@@ -10,7 +10,7 @@ use cw_utils::Expiration;
 pub struct Config {
     /// Owner If None set, contract is frozen.
     pub owner: Option<Addr>,
-    pub passport: Addr,
+    pub passport_addr: Addr,
     /// target_claim amount of claimed accounts to start release (activate gift)
     pub target_claim: Uint64,
     pub allowed_native: String,

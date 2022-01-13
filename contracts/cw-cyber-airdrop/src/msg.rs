@@ -26,8 +26,8 @@ pub enum ExecuteMsg {
         new_owner: Option<String>,
     },
     /// Allows to easily debug
-    UpdatePassport {
-        new_passport: String,
+    UpdatePassportAddr {
+        new_passport_addr: String,
     },
     UpdateTarget {
         new_target: Uint64,
