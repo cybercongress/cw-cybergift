@@ -187,6 +187,8 @@ pub fn execute_register_merkle_root(
     ]))
 }
 
+const CLAIM_BOUNTY: u128 =  100000;
+
 pub fn execute_claim(
     deps: DepsMut,
     _env: Env,
@@ -228,9 +230,9 @@ pub fn execute_claim(
     update_coefficient(deps.storage, claim_amount, &mut config)?;
 
     let release_state = ReleaseState {
-        balance_claim: claim_amount.sub(Uint128::new(100000)),
+        balance_claim: claim_amount.checked_sub(Uint128::new(CLAIM_BOUNTY))?,
         stage: Uint64::zero(),
-        stage_expiration: Expiration::default(),
+        stage_expiration: Expiration::Never {},
     };
 
     RELEASE.save(
@@ -249,7 +251,7 @@ pub fn execute_claim(
             to_address: claim_msg.clone().target_address,
             amount: vec![Coin {
                 denom: config.allowed_native,
-                amount: Uint128::new(100000),
+                amount: Uint128::new(CLAIM_BOUNTY),
             }],
         })
         .add_attributes(vec![
