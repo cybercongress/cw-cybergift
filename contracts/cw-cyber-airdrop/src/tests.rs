@@ -1,15 +1,19 @@
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{attr, from_binary, from_slice, BankMsg, Coin, CosmosMsg, SubMsg, Uint128, Binary, Env};
+    use cosmwasm_std::{
+        attr, from_binary, from_slice, BankMsg, Binary, Coin, CosmosMsg, Env, SubMsg, Uint128,
+        Uint64,
+    };
     use serde::Deserialize;
 
     use crate::execute::*;
-    use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, QueryMsg, ClaimMsg, ClaimerType, ReleaseStateResponse};
+    use crate::msg::{
+        ClaimMsg, ClaimerType, ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse,
+        MerkleRootResponse, QueryMsg, ReleaseStateResponse,
+    };
     use crate::ContractError;
     use std::ops::Mul;
-    use crate::state::ReleaseState;
-    use cw_utils::DAY;
 
     const NATIVE_TOKEN: &str = "boot";
 
@@ -26,7 +30,7 @@ mod tests {
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
             passport: "passport".to_string(),
-            target: 4u64,
+            target_claim: Uint64::new(4),
             allowed_native: NATIVE_TOKEN.to_string(),
             initial_balance: Uint128::new(10000000000000),
             coefficient_up: Uint128::new(20),
@@ -40,7 +44,8 @@ mod tests {
             &[Coin {
                 denom: NATIVE_TOKEN.to_string(),
                 amount: Uint128::new(10000000000000),
-            }]);
+            }],
+        );
 
         // we can just call .unwrap() to assert this was a success
         let _res = instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
@@ -59,7 +64,7 @@ mod tests {
         let msg = InstantiateMsg {
             owner: None,
             passport: "passport".to_string(),
-            target: 4u64,
+            target_claim: Uint64::new(4),
             allowed_native: NATIVE_TOKEN.to_string(),
             initial_balance: Uint128::new(100),
             coefficient_up: Default::default(),
@@ -111,7 +116,7 @@ mod tests {
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
             passport: "passport".to_string(),
-            target: 4u64,
+            target_claim: Uint64::new(4),
             allowed_native: NATIVE_TOKEN.to_string(),
             initial_balance: Default::default(),
             coefficient_up: Default::default(),
@@ -157,8 +162,10 @@ mod tests {
         );
     }
 
-    const ETH_TEST: &[u8] = include_bytes!("../testdata/airdrop_stage_1_test_data_ethereum_address.json");
-    const COSMOS_TEST: &[u8] = include_bytes!("../testdata/airdrop_stage_1_test_data_cosmos_address.json");
+    const ETH_TEST: &[u8] =
+        include_bytes!("../testdata/airdrop_stage_1_test_data_ethereum_address.json");
+    const COSMOS_TEST: &[u8] =
+        include_bytes!("../testdata/airdrop_stage_1_test_data_cosmos_address.json");
 
     #[derive(Deserialize, Debug)]
     struct Encoded {
@@ -166,7 +173,7 @@ mod tests {
         signature: Binary,
         amount: Uint128,
         root: String,
-        proofs: Vec<String>
+        proofs: Vec<String>,
     }
 
     #[test]
@@ -179,7 +186,7 @@ mod tests {
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
             passport: "passport".to_string(),
-            target: 2u64,
+            target_claim: Uint64::new(2),
             allowed_native: NATIVE_TOKEN.to_string(),
             initial_balance: Uint128::new(10000000000000),
             coefficient_up: Uint128::new(20),
@@ -209,19 +216,19 @@ mod tests {
             claim_msg: claim_msg_ethereum,
             signature: eth_test_data.signature,
             proof: eth_test_data.proofs,
-            claim_amount: eth_test_data.amount
+            claim_amount: eth_test_data.amount,
         };
 
         let env = mock_env();
         let info = mock_info("addr0001", &[]);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
 
-        let claim_msg_ethereum:ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
+        let claim_msg_ethereum: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
         let expected = SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
             to_address: claim_msg_ethereum.clone().target_address,
             amount: vec![Coin {
                 denom: NATIVE_TOKEN.to_string(),
-                amount: Uint128::new(100000)
+                amount: Uint128::new(100000),
             }],
         }));
         assert_eq!(res.messages, vec![expected]);
@@ -259,24 +266,24 @@ mod tests {
 
         let cosmos_test_data: Encoded = from_slice(COSMOS_TEST).unwrap();
 
-        let claim_msg_cosmos:ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
+        let claim_msg_cosmos: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
         let msg = ExecuteMsg::Claim {
             claim_msg: claim_msg_cosmos,
             signature: cosmos_test_data.signature,
             proof: cosmos_test_data.proofs,
-            claim_amount: cosmos_test_data.amount
+            claim_amount: cosmos_test_data.amount,
         };
 
         let env = mock_env();
         let info = mock_info("addr0002", &[]);
         let res = execute(deps.as_mut(), env, info, msg).unwrap();
 
-        let claim_msg_cosmos:ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
+        let claim_msg_cosmos: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
         let expected = SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
             to_address: claim_msg_cosmos.clone().target_address,
             amount: vec![Coin {
                 denom: NATIVE_TOKEN.to_string(),
-                amount: Uint128::new(100000)
+                amount: Uint128::new(100000),
             }],
         }));
         assert_eq!(res.messages, vec![expected]);
@@ -295,58 +302,65 @@ mod tests {
         let env = mock_env();
         let res = query(deps.as_ref(), env, QueryMsg::Config {}).unwrap();
         let config: ConfigResponse = from_binary(&res).unwrap();
-        assert_eq!(
-            2,
-            config.claims
-        );
+        assert_eq!(2, config.claims.u64());
 
-        let claim_msg:ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
+        let claim_msg: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
         let env = mock_env();
         let info = mock_info(claim_msg.target_address.as_str(), &[]);
         let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap();
         println!("{:?}", res);
 
-        let claim_msg:ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
+        let claim_msg: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
         let env = mock_env();
         let info = mock_info(claim_msg.target_address.as_str(), &[]);
         let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap();
         println!("{:?}", res);
 
-        let claim_msg:ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
+        let claim_msg: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
         let env = mock_env();
-        let res = query(deps.as_ref(), env, QueryMsg::ReleaseState {
-            address: claim_msg.target_address
-        }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            env,
+            QueryMsg::ReleaseState {
+                address: claim_msg.target_address,
+            },
+        )
+        .unwrap();
         let release_state: ReleaseStateResponse = from_binary(&res).unwrap();
         println!("{:?}", release_state);
 
-        let claim_msg:ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
+        let claim_msg: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
         let env = mock_env();
-        let res = query(deps.as_ref(), env, QueryMsg::ReleaseState {
-            address: claim_msg.target_address
-        }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            env,
+            QueryMsg::ReleaseState {
+                address: claim_msg.target_address,
+            },
+        )
+        .unwrap();
         let release_state: ReleaseStateResponse = from_binary(&res).unwrap();
         println!("{:?}", release_state);
 
-        let claim_msg:ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
+        let claim_msg: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
         let env = mock_env();
         let info = mock_info(claim_msg.target_address.as_str(), &[]);
         let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap_err();
         println!("{:?}", res);
 
-        let claim_msg:ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
+        let claim_msg: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
         let env = mock_env();
         let info = mock_info(claim_msg.target_address.as_str(), &[]);
         let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap_err();
         println!("{:?}", res);
 
-        let claim_msg:ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
+        let claim_msg: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
         let env = mock_env_time(86400);
         let info = mock_info(claim_msg.target_address.as_str(), &[]);
         let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap();
         println!("{:?}", res);
 
-        let claim_msg:ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
+        let claim_msg: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
         let env = mock_env_time(86400);
         let info = mock_info(claim_msg.target_address.as_str(), &[]);
         let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap();
@@ -360,7 +374,7 @@ mod tests {
         let msg = InstantiateMsg {
             owner: Some("owner0000".to_string()),
             passport: "passport".to_string(),
-            target: 4u64,
+            target_claim: Uint64::new(4),
             allowed_native: NATIVE_TOKEN.to_string(),
             initial_balance: Uint128::new(10000000000000),
             coefficient_up: Uint128::new(20),
@@ -372,9 +386,10 @@ mod tests {
         let info = mock_info(
             "addr0000",
             &[Coin {
-            denom: NATIVE_TOKEN.to_string(),
-            amount: Uint128::new(10000000000000),
-        }]);
+                denom: NATIVE_TOKEN.to_string(),
+                amount: Uint128::new(10000000000000),
+            }],
+        );
         let _res = instantiate(deps.as_mut(), env, info, msg).unwrap();
 
         // can register merkle root
@@ -425,4 +440,3 @@ mod tests {
         assert_eq!(res, ContractError::Unauthorized {});
     }
 }
-

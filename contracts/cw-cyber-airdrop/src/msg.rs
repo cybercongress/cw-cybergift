@@ -1,8 +1,8 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Binary, Decimal, Uint128};
-use cw_utils::{Expiration};
+use cosmwasm_std::{Binary, Decimal, Uint128, Uint64};
+use cw_utils::Expiration;
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct InstantiateMsg {
@@ -14,7 +14,7 @@ pub struct InstantiateMsg {
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
     pub coefficient: Uint128,
-    pub target: u64,
+    pub target_claim: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -30,7 +30,7 @@ pub enum ExecuteMsg {
         new_passport: String,
     },
     UpdateTarget {
-        new_target: u64,
+        new_target: Uint64,
     },
     RegisterMerkleRoot {
         /// MerkleRoot is hex-encoded merkle root.
@@ -75,10 +75,10 @@ pub enum ClaimerType {
 
 impl ToString for ClaimerType {
     fn to_string(&self) -> String {
-     match self {
-         ClaimerType::Ethereum => String::from("ethereum"),
-         ClaimerType::Cosmos => String::from("cosmos")
-     }
+        match self {
+            ClaimerType::Ethereum => String::from("ethereum"),
+            ClaimerType::Cosmos => String::from("cosmos"),
+        }
     }
 }
 
@@ -96,15 +96,15 @@ pub enum QueryMsg {
 pub struct ConfigResponse {
     pub owner: Option<String>,
     pub passport: String,
-    pub target: u64,
+    pub target_claim: Uint64,
     pub allowed_native: String,
     pub current_balance: Uint128,
     pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
     pub coefficient: Decimal,
-    pub claims: u64,
-    pub releases: u64,
+    pub claims: Uint64,
+    pub releases: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -121,8 +121,8 @@ pub struct IsClaimedResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReleaseStateResponse {
     pub balance_claim: Uint128,
-    pub stage: u64,
-    pub stage_expiration: Expiration
+    pub stage: Uint64,
+    pub stage_expiration: Expiration,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

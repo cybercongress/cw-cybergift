@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Uint128, Decimal};
+use cosmwasm_std::{Addr, Decimal, Uint128, Uint64};
 use cw_storage_plus::{Item, Map};
 use cw_utils::Expiration;
 
@@ -11,22 +11,25 @@ pub struct Config {
     /// Owner If None set, contract is frozen.
     pub owner: Option<Addr>,
     pub passport: Addr,
-    pub target: u64, // target amount of claimed accounts to start release (activate gift)
+    /// target_claim amount of claimed accounts to start release (activate gift)
+    pub target_claim: Uint64,
     pub allowed_native: String,
     pub current_balance: Uint128,
     pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
     pub coefficient: Decimal,
-    pub claims: u64, // amount of claimed accounts
-    pub releases: u64, // amount of total releases by all accounts
+    /// amount of claimed accounts
+    pub claims: Uint64,
+    /// amount of total releases by all accounts
+    pub releases: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReleaseState {
     pub balance_claim: Uint128,
-    pub stage: u64,
-    pub stage_expiration: Expiration
+    pub stage: Uint64,
+    pub stage_expiration: Expiration,
 }
 
 pub const CONFIG_KEY: &str = "config";

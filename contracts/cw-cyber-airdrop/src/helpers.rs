@@ -2,16 +2,23 @@ use crate::msg::ClaimMsg;
 use crate::state::{Config, CONFIG, MERKLE_ROOT};
 use crate::ContractError;
 use anyhow::Result;
-use cosmwasm_std::{from_binary, to_vec, Binary, Deps, DepsMut, MessageInfo, StdError, StdResult, Uint128, VerificationError, Decimal, Storage};
+use cosmwasm_std::{
+    from_binary, to_vec, Binary, Decimal, Deps, DepsMut, MessageInfo, StdError, StdResult, Storage,
+    Uint128, VerificationError,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::to_string;
 use sha2::{Digest, Sha256};
 use sha3::Keccak256;
 use std::convert::TryInto;
-use serde_json::to_string;
 use std::ops::{Add, Mul, Sub};
 
-pub fn update_coefficient(store: &mut dyn Storage, amount: Uint128, config: &mut Config) -> StdResult<()> {
+pub fn update_coefficient(
+    store: &mut dyn Storage,
+    amount: Uint128,
+    config: &mut Config,
+) -> StdResult<()> {
     let coefficient_up = config.coefficient_up;
     let coefficient_down = config.coefficient_down;
     let initial_balance = config.initial_balance;
@@ -27,10 +34,10 @@ pub fn update_coefficient(store: &mut dyn Storage, amount: Uint128, config: &mut
 
     let new_balance_ratio = Decimal::from_ratio(current_balance, initial_balance);
 
-    let new_coefficient = Decimal::one().sub(new_balance_ratio)
+    let new_coefficient = Decimal::one()
+        .sub(new_balance_ratio)
         .mul(Decimal::from_ratio(coefficient_down, 1u128))
         .add(Decimal::from_ratio(coefficient_up, 1u128).mul(new_balance_ratio));
-
 
     // TODO delete after debug
     println!("{:?}", new_balance_ratio.to_string());
@@ -163,7 +170,9 @@ pub fn decode_signature(input: &str) -> StdResult<[u8; 65]> {
         ));
     }
     if !input.starts_with("0x") {
-        return Err(StdError::generic_err("Ethereum signature must start wit 0x"));
+        return Err(StdError::generic_err(
+            "Ethereum signature must start wit 0x",
+        ));
     }
     let data = hex::decode(&input[2..]).map_err(|_| StdError::generic_err("hex decoding error"))?;
     Ok(data.try_into().unwrap())
@@ -176,16 +185,20 @@ pub fn verify_cosmos(
 ) -> Result<bool, ContractError> {
     let msg_raw = to_vec(claim_msg)?;
     let hash = Sha256::digest(&msg_raw);
-    let sig:CosmosSignature = from_binary(&signature).unwrap();
+    let sig: CosmosSignature = from_binary(&signature).unwrap();
 
-    let result = deps.api
-        .secp256k1_verify(hash.as_ref(), sig.signature.as_slice(), sig.pub_key.as_slice())
+    let result = deps
+        .api
+        .secp256k1_verify(
+            hash.as_ref(),
+            sig.signature.as_slice(),
+            sig.pub_key.as_slice(),
+        )
         .map_err(|err| ContractError::IsNotEligible {
             msg: err.to_string(),
         });
     return result;
 }
-
 
 /*
 {"pub_key": "Aoz4+N8ckpDiz4oOKKKVERJGeS49nOgGrXw0s0dkymDr","signature":"CvMkqkQHVPV3DTyVErth16OdTjAwqQD6t+r9ImSpdwUZFin+UPeGSfH9hhuAmqYAp4CffhNNSEisdfzwwvlN/w=="}

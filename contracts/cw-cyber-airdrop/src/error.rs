@@ -1,4 +1,4 @@
-use cosmwasm_std::{RecoverPubkeyError, StdError, VerificationError};
+use cosmwasm_std::{OverflowError, RecoverPubkeyError, StdError, VerificationError};
 use hex::FromHexError;
 use thiserror::Error;
 
@@ -15,6 +15,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     Verification(#[from] VerificationError),
+
+    #[error("{0}")]
+    Overflow(#[from] OverflowError),
 
     #[error("Unauthorized")]
     Unauthorized {},

@@ -1,15 +1,21 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{attr, has_coins, to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, Decimal};
+use cosmwasm_std::{
+    attr, has_coins, to_binary, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo,
+    Response, StdResult, Uint128, Uint64,
+};
 use cw2::{get_contract_version, set_contract_version};
 
 use crate::error::ContractError;
 use crate::helpers;
 use crate::helpers::{update_coefficient, verify_cosmos, verify_merkle_proof};
-use crate::msg::{ClaimMsg, ClaimerType, ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, MigrateMsg, QueryMsg, ReleaseStateResponse};
+use crate::msg::{
+    ClaimMsg, ClaimerType, ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse,
+    MerkleRootResponse, MigrateMsg, QueryMsg, ReleaseStateResponse,
+};
 use crate::state::{Config, ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE};
-use cw_utils::{Expiration, Duration, DAY, Expiration::Never};
-use std::ops::{Sub, Mul, Add};
+use cw_utils::{Duration, Expiration, Expiration::Never, DAY};
+use std::ops::{Add, Mul, Sub};
 
 // Version info, for migration info
 const CONTRACT_NAME: &str = "crates.io:cw-cyber-gift";
@@ -42,15 +48,15 @@ pub fn instantiate(
     let config = Config {
         owner: Some(owner),
         passport: deps.api.addr_validate(&msg.passport)?,
-        target: msg.target,
+        target_claim: msg.target_claim,
         allowed_native: msg.allowed_native,
         current_balance: msg.initial_balance,
         initial_balance: msg.initial_balance,
         coefficient_up: msg.coefficient_up,
         coefficient_down: msg.coefficient_down,
         coefficient: Decimal::from_ratio(msg.coefficient, 1u128),
-        claims: 0u64,
-        releases: 0u64
+        claims: Uint64::zero(),
+        releases: Uint64::zero(),
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -66,8 +72,12 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::UpdateOwner { new_owner } => execute_update_owner(deps, env, info, new_owner),
-        ExecuteMsg::UpdatePassport { new_passport } => execute_update_passport(deps, env, info, new_passport),
-        ExecuteMsg::UpdateTarget { new_target } => execute_update_target(deps, env, info, new_target),
+        ExecuteMsg::UpdatePassport { new_passport } => {
+            execute_update_passport(deps, env, info, new_passport)
+        }
+        ExecuteMsg::UpdateTarget { new_target } => {
+            execute_update_target(deps, env, info, new_target)
+        }
         ExecuteMsg::RegisterMerkleRoot { merkle_root } => {
             execute_register_merkle_root(deps, env, info, merkle_root)
         }
@@ -103,9 +113,7 @@ pub fn execute_update_owner(
         Ok(exists)
     })?;
 
-    Ok(Response::new().add_attributes(vec![
-        attr("action", "update_owner")
-    ]))
+    Ok(Response::new().add_attributes(vec![attr("action", "update_owner")]))
 }
 
 pub fn execute_update_passport(
@@ -137,7 +145,7 @@ pub fn execute_update_target(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    new_target: u64,
+    new_target: Uint64,
 ) -> Result<Response, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;
     let owner = cfg.owner.ok_or(ContractError::Unauthorized {})?;
@@ -146,7 +154,7 @@ pub fn execute_update_target(
     }
 
     CONFIG.update(deps.storage, |mut exists| -> StdResult<_> {
-        exists.target = new_target;
+        exists.target_claim = new_target;
         Ok(exists)
     })?;
 
@@ -196,7 +204,7 @@ pub fn execute_claim(
     let mut config = CONFIG.load(deps.storage)?;
     let claim_amount = amount * config.coefficient;
 
-    // TODO delete after debug
+    // TODO: delete after debug
     println!("{:?}", "execute_claim");
     println!("{:?}", config.coefficient);
     println!("{:?}", claim_amount.to_string());
@@ -207,7 +215,13 @@ pub fn execute_claim(
 
     is_eligible(deps.as_ref(), &claim_msg, signature)?;
 
-    verify_merkle_proof(&deps, &info, claim_msg.clone().gift_claiming_address, amount, proof)?;
+    verify_merkle_proof(
+        &deps,
+        &info,
+        claim_msg.clone().gift_claiming_address,
+        amount,
+        proof,
+    )?;
 
     CLAIM.save(deps.storage, claim_msg.target_address.clone(), &true)?;
 
@@ -215,14 +229,18 @@ pub fn execute_claim(
 
     let release_state = ReleaseState {
         balance_claim: claim_amount.sub(Uint128::new(100000)),
-        stage: 0,
-        stage_expiration: Expiration::default()
+        stage: Uint64::zero(),
+        stage_expiration: Expiration::default(),
     };
 
-    RELEASE.save(deps.storage, claim_msg.target_address.clone(), &release_state)?;
+    RELEASE.save(
+        deps.storage,
+        claim_msg.target_address.clone(),
+        &release_state,
+    )?;
 
     CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
-        cfg.claims = cfg.claims.add(1u64);
+        cfg.claims = cfg.claims.add(Uint64::new(1));
         Ok(cfg)
     })?;
 
@@ -237,7 +255,10 @@ pub fn execute_claim(
         .add_attributes(vec![
             attr("action", "claim"),
             attr("original", claim_msg.clone().gift_claiming_address),
-            attr("type", claim_msg.clone().gift_claiming_address_type.to_string()),
+            attr(
+                "type",
+                claim_msg.clone().gift_claiming_address_type.to_string(),
+            ),
             attr("target", claim_msg.clone().target_address),
             attr("amount", claim_amount),
         ]);
@@ -255,48 +276,52 @@ pub fn execute_release(
     }
 
     let mut config = CONFIG.load(deps.storage)?;
-    if config.claims < config.target {
-        return Err(ContractError::NotActivated {})
+    if config.claims < config.target_claim {
+        return Err(ContractError::NotActivated {});
     }
 
     let mut release_state = RELEASE.load(deps.storage, info.clone().sender.into_string())?;
 
-    let amount:Uint128;
+    let amount: Uint128;
     // let expiration:Expiration;
     // let stage:u64;
 
     if release_state.balance_claim.is_zero() {
-        return Err(ContractError::GiftReleased {})
+        return Err(ContractError::GiftReleased {});
     }
 
-    if release_state.stage == 0 {
+    if release_state.stage.is_zero() {
         amount = release_state.balance_claim.mul(Decimal::percent(10));
         release_state.stage_expiration = DAY.after(&env.block);
-        release_state.stage = RELEASE_STAGES;
+        release_state.stage = Uint64::new(RELEASE_STAGES);
     } else {
         if release_state.stage_expiration.is_expired(&env.block) {
-            if release_state.stage == 1 {
+            if release_state.stage.u64() == 1 {
                 amount = release_state.balance_claim;
                 release_state.stage_expiration = Expiration::Never {};
-                release_state.stage = 0;
+                release_state.stage = Uint64::zero();
             } else {
-                amount = release_state.balance_claim.mul(
-                    Decimal::from_ratio(1u128, release_state.stage)
-                );
+                amount = release_state
+                    .balance_claim
+                    .mul(Decimal::from_ratio(1u128, release_state.stage));
                 release_state.stage_expiration = DAY.after(&env.block);
-                release_state.stage = release_state.stage.sub(1);
+                release_state.stage = release_state.stage.checked_sub(Uint64::new(1))?;
             }
         } else {
-            return Err(ContractError::StageReleased {})
+            return Err(ContractError::StageReleased {});
         }
     }
 
     release_state.balance_claim = release_state.balance_claim - amount;
 
-    RELEASE.save(deps.storage, info.clone().sender.to_string(), &release_state);
+    RELEASE.save(
+        deps.storage,
+        info.clone().sender.to_string(),
+        &release_state,
+    )?;
 
     CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
-        cfg.releases = cfg.releases.add(1u64);
+        cfg.releases = cfg.releases.add(Uint64::new(1));
         Ok(cfg)
     })?;
 
@@ -317,11 +342,7 @@ pub fn execute_release(
     Ok(res)
 }
 
-fn is_eligible(
-    deps: Deps,
-    claim_msg: &ClaimMsg,
-    signature: Binary,
-) -> Result<bool, ContractError> {
+fn is_eligible(deps: Deps, claim_msg: &ClaimMsg, signature: Binary) -> Result<bool, ContractError> {
     match claim_msg.gift_claiming_address_type {
         ClaimerType::Ethereum => helpers::verify_ethereum(deps, &claim_msg, signature),
         ClaimerType::Cosmos => verify_cosmos(deps, &claim_msg, signature),
@@ -337,7 +358,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::MerkleRoot {} => to_binary(&query_merkle_root(deps)?),
         QueryMsg::IsClaimed { address } => to_binary(&query_is_claimed(deps, address)?),
-        QueryMsg::ReleaseState {address} => to_binary(&query_release_state(deps, address)?)
+        QueryMsg::ReleaseState { address } => to_binary(&query_release_state(deps, address)?),
     }
 }
 
@@ -346,7 +367,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(ConfigResponse {
         owner: cfg.owner.map(|o| o.to_string()),
         passport: cfg.passport.to_string(),
-        target: cfg.target,
+        target_claim: cfg.target_claim,
         allowed_native: cfg.allowed_native,
         current_balance: cfg.current_balance,
         initial_balance: cfg.initial_balance,
@@ -373,17 +394,17 @@ pub fn query_is_claimed(deps: Deps, address: String) -> StdResult<IsClaimedRespo
 }
 
 pub fn query_release_state(deps: Deps, address: String) -> StdResult<ReleaseStateResponse> {
-    let release_state = RELEASE.may_load(deps.storage, address)?.unwrap_or(
-        ReleaseState {
+    let release_state = RELEASE
+        .may_load(deps.storage, address)?
+        .unwrap_or(ReleaseState {
             balance_claim: Default::default(),
-            stage: 0,
-            stage_expiration: Default::default()
-        }
-    );
+            stage: Uint64::zero(),
+            stage_expiration: Default::default(),
+        });
     let resp = ReleaseStateResponse {
         balance_claim: release_state.balance_claim,
         stage: release_state.stage,
-        stage_expiration: release_state.stage_expiration
+        stage_expiration: release_state.stage_expiration,
     };
 
     Ok(resp)
