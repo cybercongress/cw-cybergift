@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "namespaces"
+  ],
+  "properties": {
+    "namespaces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Route"
+      }
+    }
+  },
+  "definitions": {
+    "Route": {
+      "type": "object",
+      "required": [
+        "address",
+        "namespace"
+      ],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

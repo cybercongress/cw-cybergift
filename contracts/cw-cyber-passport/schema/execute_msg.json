@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExecuteMsg",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "update_namespaces"
+      ],
+      "properties": {
+        "update_namespaces": {
+          "type": "object",
+          "required": [
+            "namespaces"
+          ],
+          "properties": {
+            "namespaces": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Route"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "create_passport"
+      ],
+      "properties": {
+        "create_passport": {
+          "type": "object",
+          "required": [
+            "citizen",
+            "routes"
+          ],
+          "properties": {
+            "citizen": {
+              "type": "string"
+            },
+            "routes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/RouteData"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "set_gift"
+      ],
+      "properties": {
+        "set_gift": {
+          "type": "object",
+          "required": [
+            "gift"
+          ],
+          "properties": {
+            "gift": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "Metadata": {
+      "type": "object",
+      "required": [
+        "parent",
+        "target"
+      ],
+      "properties": {
+        "parent": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      }
+    },
+    "Route": {
+      "type": "object",
+      "required": [
+        "address",
+        "namespace"
+      ],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "RouteData": {
+      "type": "object",
+      "required": [
+        "data",
+        "namespace"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/Metadata"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
