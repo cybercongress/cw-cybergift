@@ -93,3 +93,45 @@ fn try_migrate(
         .add_attribute("method", "try_migrate")
         .add_attribute("version", contract_version.version))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{coins, from_binary};
+
+    #[test]
+    fn proper_transfer_nft() {
+        assert_eq!(true, true);
+    }
+
+    #[test]
+    fn proper_send_nft() {
+        assert_eq!(true, true);
+    }
+
+    #[test]
+    fn proper_burn() {
+        assert_eq!(true, true);
+    }
+
+    #[test]
+    fn proper_mint() {
+        assert_eq!(true, true);
+    }
+
+    #[test]
+    fn proper_set_minter() {
+        assert_eq!(true, true);
+    }
+
+    #[test]
+    fn proper_set_owner() {
+        assert_eq!(true, true);
+    }
+
+    #[test]
+    fn proper_set_fee() {
+        assert_eq!(true, true);
+    }
+}

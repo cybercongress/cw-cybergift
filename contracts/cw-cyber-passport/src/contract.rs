@@ -92,6 +92,7 @@ fn _add_to_namespace(
 
     let namespace_route = deps.api.addr_validate(&route.namespace)?;
 
+    // TODO refactor this
     let namespace: &Route = state.namespaces
         .iter()
         .find(|&r| r.namespace == namespace_route)
