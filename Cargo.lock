@@ -3,12 +3,6 @@
 version = 3
 
 [[package]]
-name = "anyhow"
-version = "1.0.52"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84450d0b4a8bd1ba4144ce8ce718fbc5d071358b1e5384bace6536b3d1f2d5b3"
-
-[[package]]
 name = "arrayref"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -31,6 +25,12 @@ name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
+
+[[package]]
+name = "bech32"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
 
 [[package]]
 name = "blake2b_simd"
@@ -251,41 +251,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-cyber-airdrop"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "base64",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.10.3",
- "cw-utils",
- "cw0",
- "cw2 0.11.1",
- "cw20",
- "hex",
- "schemars",
- "serde",
- "serde_json",
- "sha2",
- "sha3",
- "thiserror",
-]
-
-[[package]]
 name = "cw-cyber-passport"
 version = "0.0.1"
 dependencies = [
+ "base64",
+ "bech32",
  "cid",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
  "cw-storage-plus 0.10.3",
+ "cw-utils",
  "cw2 0.10.3",
+ "cw721",
  "cw721-base",
- "cw721-namespace",
+ "cyber-std",
+ "hex",
+ "primitive-types",
+ "ripemd160",
  "schemars",
  "serde",
+ "sha2",
+ "sha3",
  "thiserror",
 ]
 
@@ -324,18 +311,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw0"
-version = "0.10.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ae676b6cced78a3d38ad4b01ab4ed66fc78ac191c3c0d6bfd5372cb2efd473b"
-dependencies = [
- "cosmwasm-std",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "cw2"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -355,18 +330,6 @@ checksum = "c1d81d7c359d6c1fba3aa83dad7ec6f999e512571380ae62f81257c3db569743"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus 0.11.1",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw20"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9671d7edef5608acaf5b2f1e473ee3f501eced2cd4f7392e2106c8cf02ba0720"
-dependencies = [
- "cosmwasm-std",
- "cw-utils",
  "schemars",
  "serde",
 ]
@@ -400,19 +363,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw721-namespace"
-version = "0.0.1"
+name = "cyber-std"
+version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-storage-plus 0.10.3",
- "cw0",
- "cw2 0.10.3",
  "cw721",
- "cw721-base",
  "schemars",
  "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -515,6 +473,16 @@ checksum = "d0f40b2dcd8bc322217a5f6559ae5f9e9d1de202a2ecee2e9eafcbece7562a4f"
 dependencies = [
  "rand_core 0.6.3",
  "subtle",
+]
+
+[[package]]
+name = "fixed-hash"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
+dependencies = [
+ "byteorder",
+ "static_assertions",
 ]
 
 [[package]]
@@ -665,6 +633,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "primitive-types"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05e4722c697a58a99d5d06a08c30821d7c082a4632198de1eaa5a6c22ef42373"
+dependencies = [
+ "fixed-hash",
+ "uint",
+]
+
+[[package]]
 name = "proc-macro-crate"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -732,6 +710,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
  "getrandom 0.2.4",
+]
+
+[[package]]
+name = "ripemd160"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2eca4ecc81b7f313189bf73ce724400a07da2a6dac19588b03c8bd76a2dcc251"
+dependencies = [
+ "block-buffer",
+ "digest",
+ "opaque-debug",
 ]
 
 [[package]]

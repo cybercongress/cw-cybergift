@@ -4,7 +4,7 @@ use std::fs::create_dir_all;
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
 use cw_cyber_passport::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use cw_cyber_passport::state::{Route, State};
+use cw_cyber_passport::state::{Config, PassportMetadata};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
@@ -15,6 +15,6 @@ fn main() {
     export_schema(&schema_for!(InstantiateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg), &out_dir);
     export_schema(&schema_for!(QueryMsg), &out_dir);
-    export_schema(&schema_for!(State), &out_dir);
-    export_schema(&schema_for!(Route), &out_dir);
+    export_schema(&schema_for!(Config), &out_dir);
+    export_schema(&schema_for!(PassportMetadata), &out_dir);
 }

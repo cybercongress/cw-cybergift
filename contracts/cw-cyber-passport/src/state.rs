@@ -1,20 +1,32 @@
+use cosmwasm_std::Addr;
+use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::Addr;
-use cw_storage_plus::Item;
+use cyber_std::CyberMsgWrapper;
+
+pub type PassportContract<'a> = cw721_base::Cw721Contract<'a, Extension, CyberMsgWrapper>;
+pub type Extension = PassportMetadata;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct Route {
-    pub namespace: String,
-    pub address: String,
+pub struct Config {
+    pub owner: Addr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct State {
-    pub owner: Option<Addr>,
-    pub cybergift: Option<Addr>,
-    pub namespaces: Vec<Route>,
+pub struct AddressPortID {
+    pub address: Addr,
+    pub portid: String,
 }
 
-pub const STATE: Item<State> = Item::new("state");
+pub const CONFIG: Item<Config> = Item::new("config");
+pub const NICKNAMES: Map<&str, AddressPortID> = Map::new("nicknames");
+pub const PORTID: Item<u64> = Item::new("portid");
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+#[serde(rename_all = "snake_case")]
+pub struct PassportMetadata {
+    pub addresses: Option<Vec<String>>,
+    pub avatar: String,
+    pub nickname: String,
+}

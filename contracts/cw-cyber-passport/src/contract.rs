@@ -1,42 +1,31 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{attr, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, CosmosMsg, WasmMsg, Empty};
-use cw2::set_contract_version;
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, StdResult, to_binary};
+use cyber_std::CyberMsgWrapper;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, NamespacesListResponse, RouteData};
-use crate::state::{State, STATE};
-use cw721_namespace::{
-    msg::ExecuteMsg as Cw721ExecuteMsg, msg::MintMsg,
-};
-use cw721_namespace::state::{Extension, Metadata};
-use crate::state::Route;
+use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_minter, execute_set_owner, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::query::{query_address_by_nickname, query_config, query_metadata_by_nickname, query_passport_by_nickname, query_portid};
+use crate::state::{Config, CONFIG, PassportContract, PORTID};
 
-use cid::multihash::{Code, MultihashDigest};
-use cid::Cid;
-
-pub type NamespaceContract<'a> = cw721_base::Cw721Contract<'a, Extension, Empty>;
-
-// version info for migration info
-const CONTRACT_NAME: &str = "crates.io:cw-cyber-passport";
-const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-    let state = State {
-        owner: Some(info.sender.clone()),
-        namespaces: msg.namespaces, // TODO add map_validate
-        cybergift: None,
+) -> StdResult<Response> {
+    let config = Config {
+        owner: deps.api.addr_validate(&msg.clone().owner)?,
     };
-    STATE.save(deps.storage, &state)?;
-    Ok(Response::default())
+
+    CONFIG.save(deps.storage, &config)?;
+    PORTID.save(deps.storage, &0u64)?;
+
+    PassportContract::default().instantiate(deps, env, info, msg.into())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -47,162 +36,46 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::CreatePassport {
-            citizen,
-            routes
-        } => execute_create_passport(deps, env, info, citizen, routes),
-        ExecuteMsg::UpdateNamespaces{ namespaces } => execute_update_namespaces(deps, env, info, namespaces),
-        ExecuteMsg::SetGift { gift } => execute_set_gift(deps, env, info, gift),
+        ExecuteMsg::CreatePassport {nickname, avatar} => execute_create_passport(deps, env, info, nickname, avatar),
+        ExecuteMsg::UpdateName { old_nickname, new_nickname} => execute_update_name(deps, env, info, old_nickname, new_nickname),
+        ExecuteMsg::UpdateAvatar { nickname, new_avatar} => execute_update_avatar(deps, env, info, nickname, new_avatar),
+        ExecuteMsg::ProofAddress { nickname, address, signature } => execute_proof_address(deps, env, info, nickname, address, signature),
+        ExecuteMsg::RemoveAddress {nickname, address } => execute_remove_address(deps, env, info, nickname, address),
+        ExecuteMsg::SetMinter { minter } => execute_set_minter(deps, env, info, minter),
+        ExecuteMsg::SetOwner { owner } => execute_set_owner(deps, env, info, owner),
+        // Overwrite CW721 methods
+        ExecuteMsg::TransferNft { recipient, token_id} => execute_transfer_nft(deps, env, info, recipient, token_id),
+        ExecuteMsg::SendNft { contract, token_id, msg} => execute_send_nft(deps, env, info, contract, token_id, msg),
+        ExecuteMsg::Burn { token_id } => execute_burn(deps, env, info, token_id),
+        ExecuteMsg::Mint(mint_msg) => execute_mint(deps, env, info, mint_msg),
+        // CW721 methods
+        _ => PassportContract::default()
+            .execute(deps, env, info, msg.into())
+            .map_err(|err| err.into()),
+
     }
-}
-
-pub fn execute_create_passport(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    citizen: String,
-    routes_data: Vec<RouteData>
-) -> Result<Response, ContractError> {
-
-    let state = STATE.load(deps.storage)?;
-
-    let cybergift = state.cybergift.ok_or(ContractError::Unauthorized {})?;
-    let owner = state.owner.ok_or(ContractError::Unauthorized {})?;
-
-    if info.sender != cybergift || info.sender != owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    for route in routes_data {
-        _add_to_namespace(&deps, &env, citizen.clone(), route.clone())?;
-    }
-
-    Ok(Response::new().add_attributes([
-        attr("method", "created_passport"),
-    ]))
-}
-
-fn _add_to_namespace(
-    deps: &DepsMut,
-    _env: &Env,
-    citizen: String,
-    route: RouteData,
-) -> Result<Response, ContractError> {
-    let state = STATE.load(deps.storage)?;
-
-    let namespace_route = deps.api.addr_validate(&route.namespace)?;
-
-    // TODO refactor this
-    let namespace: &Route = state.namespaces
-        .iter()
-        .find(|&r| r.namespace == namespace_route)
-        .ok_or(ContractError::Unauthorized {})?;
-
-    let h = Code::Sha2_256.digest(&route.clone().data.parent.as_bytes());
-    let token_id_cid = Cid::new_v0(h).unwrap();
-    let mint_msg = Cw721ExecuteMsg::Mint(MintMsg {
-        token_id: token_id_cid.to_string(),
-        owner: citizen,
-        token_uri: None,
-        extension: Metadata {
-            parent: route.data.parent,
-            target: route.data.target,
-        },
-    });
-
-    let callback = CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: namespace.address.to_string(),
-        msg: to_binary(&mint_msg)?,
-        funds: vec![],
-    });
-
-
-    Ok(Response::new().add_message(callback))
-}
-
-pub fn execute_update_namespaces(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    namespaces: Vec<Route>,
-) -> Result<Response, ContractError> {
-
-    let mut state = STATE.load(deps.storage)?;
-
-    let owner = state.clone().owner.ok_or(ContractError::Unauthorized {})?;
-
-    if info.sender != owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    state.namespaces = namespaces;
-    STATE.save(deps.storage, &state)?;
-
-    Ok(Response::new().add_attributes(vec![
-        attr("action", "updated_namespaces")
-    ]))
-}
-
-pub fn execute_set_gift(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    gift: String,
-) -> Result<Response, ContractError> {
-
-    let mut state = STATE.load(deps.storage)?;
-
-    let owner = state.clone().owner.ok_or(ContractError::Unauthorized {})?;
-
-    if info.sender != owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    state.cybergift = Some(deps.api.addr_validate(&gift)?);
-    STATE.save(deps.storage, &state)?;
-
-    Ok(Response::new().add_attributes(vec![
-        attr("action", "updated_gift")
-    ]))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::NamespacesList {} => to_binary(&query_namespaces_list(deps)?)
+        QueryMsg::Config {} => to_binary(&query_config(deps)?),
+        QueryMsg::Portid {} => to_binary(&query_portid(deps)?),
+        QueryMsg::AddressByNickname {nickname} => to_binary(&query_address_by_nickname(deps, nickname)?),
+        QueryMsg::PassportByNickname {nickname} => to_binary(&query_passport_by_nickname(deps, nickname)?),
+        QueryMsg::MetadataByNickname {nickname} => to_binary(&query_metadata_by_nickname(deps, nickname)?),
+        // CW721 methods
+        _ => PassportContract::default().query(deps, env, msg.into()),
     }
 }
 
-pub fn query_namespaces_list(deps: Deps) -> StdResult<NamespacesListResponse> {
-    let state = STATE.load(deps.storage)?;
-    Ok(NamespacesListResponse {
-        namespaces: state.namespaces.into_iter().map(|a| a.into()).collect(),
-    })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_binary};
-
-    #[test]
-    fn proper_initialization() {
-        assert_eq!(true, true);
-    }
-
-    #[test]
-    fn proper_create_passport() {
-        assert_eq!(true, true);
-    }
-
-    #[test]
-    fn proper_update_namespaces() {
-        assert_eq!(true, true);
-    }
-
-    #[test]
-    fn proper_set_gift() {
-        assert_eq!(true, true);
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    msg: MigrateMsg<Config>,
+) -> Result<Response, ContractError> {
+    match msg {
+        MigrateMsg { version, config } => try_migrate(deps, version, config),
     }
 }

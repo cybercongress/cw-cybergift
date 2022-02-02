@@ -14,6 +14,7 @@ use cw721_base::{
 use crate::state::Extension;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
     /// Name of the NFT contract
     pub name: String,
@@ -25,8 +26,7 @@ pub struct InstantiateMsg {
     /// or contract. You will likely replace this with custom logic in custom NFTs
     pub minter: String,
 
-    pub fee: Coin,
-    pub owner: Option<String>,
+    pub owner: String,
 }
 
 impl From<InstantiateMsg> for CW721InstantiateMsg {
@@ -46,8 +46,7 @@ pub type MintMsg = CW721MintMsg<Extension>;
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     SetMinter { minter: String },
-    SetOwner { owner: Option<String> },
-    SetFee { fee: Coin },
+    SetOwner { owner: String },
 
     // Overwrite Standard CW721 ExecuteMsg
 
