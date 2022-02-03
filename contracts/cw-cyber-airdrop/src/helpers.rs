@@ -1,16 +1,10 @@
-use crate::msg::ClaimMsg;
 use crate::state::{Config, CONFIG, MERKLE_ROOT};
 use crate::ContractError;
-use anyhow::Result;
 use cosmwasm_std::{
-    from_binary, to_vec, Binary, Decimal, Deps, DepsMut, MessageInfo, StdError, StdResult, Storage,
+    Decimal, DepsMut, MessageInfo, StdError, StdResult, Storage,
     Uint128, VerificationError,
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use serde_json::to_string;
-use sha2::{Digest, Sha256};
-use sha3::Keccak256;
+use sha2::Digest;
 use std::convert::TryInto;
 use std::ops::{Add, Mul, Sub};
 
@@ -80,132 +74,4 @@ pub fn verify_merkle_proof(
         return Err(StdError::verification_err(VerificationError::GenericErr {}).into());
     }
     Ok(true)
-}
-
-pub fn verify_ethereum(
-    deps: Deps,
-    claim_msg: &ClaimMsg,
-    signature: Binary,
-) -> Result<bool, ContractError> {
-    let mut hasher = Keccak256::new();
-
-    let msg = to_string(claim_msg).map_err(|_| ContractError::InvalidInput {})?;
-
-    hasher.update(format!("\x19Ethereum Signed Message:\n{}", msg.len()));
-    hasher.update(msg);
-    let hash = hasher.finalize();
-    let sig = decode_signature(&signature.clone().to_string())?;
-
-    // Decompose signature
-    let (v, rs) = match sig.split_last() {
-        Some(pair) => pair,
-        None => {
-            return Err(ContractError::IsNotEligible {
-                msg: "Signature must not be empty".to_string(),
-            })
-        }
-    };
-    let recovery = get_recovery_param(*v)?;
-
-    // Verification
-    let calculated_pubkey = deps.api.secp256k1_recover_pubkey(&hash, rs, recovery)?;
-    let calculated_address = ethereum_address_raw(&calculated_pubkey)?;
-    let signer_address = decode_address(claim_msg.gift_claiming_address.clone().as_str())?;
-    if signer_address != calculated_address {
-        return Err(ContractError::IsNotEligible {
-            msg: "signer address is not calculated addr".to_string(),
-        });
-    }
-    deps.api
-        .secp256k1_verify(&hash, rs, &calculated_pubkey)
-        .map_err(|err| ContractError::IsNotEligible {
-            msg: err.to_string(),
-        })
-}
-
-fn get_recovery_param(v: u8) -> StdResult<u8> {
-    match v {
-        27 => Ok(0),
-        28 => Ok(1),
-        _ => Err(StdError::generic_err("Values of v other than 27 and 28 not supported. Replay protection (EIP-155) cannot be used here."))
-    }
-}
-
-/// Returns a raw 20 byte Ethereum address
-fn ethereum_address_raw(pubkey: &[u8]) -> StdResult<[u8; 20]> {
-    let (tag, data) = match pubkey.split_first() {
-        Some(pair) => pair,
-        None => return Err(StdError::generic_err("Public key must not be empty")),
-    };
-    if *tag != 0x04 {
-        return Err(StdError::generic_err("Public key must start with 0x04"));
-    }
-    if data.len() != 64 {
-        return Err(StdError::generic_err("Public key must be 65 bytes long"));
-    }
-
-    let hash = Keccak256::digest(data);
-    Ok(hash[hash.len() - 20..].try_into().unwrap())
-}
-
-/// Returns a raw 20 byte Ethereum address from hex
-pub fn decode_address(input: &str) -> StdResult<[u8; 20]> {
-    if input.len() != 42 {
-        return Err(StdError::generic_err(
-            "Ethereum address must be 42 characters long",
-        ));
-    }
-    if !input.starts_with("0x") {
-        return Err(StdError::generic_err("Ethereum address must start wit 0x"));
-    }
-    let data = hex::decode(&input[2..]).map_err(|_| StdError::generic_err("hex decoding error"))?;
-    Ok(data.try_into().unwrap())
-}
-
-/// Returns a raw 65 byte Ethereum signature from hex
-pub fn decode_signature(input: &str) -> StdResult<[u8; 65]> {
-    if input.len() != 132 {
-        return Err(StdError::generic_err(
-            "Ethereum signature must be 132 characters long",
-        ));
-    }
-    if !input.starts_with("0x") {
-        return Err(StdError::generic_err(
-            "Ethereum signature must start wit 0x",
-        ));
-    }
-    let data = hex::decode(&input[2..]).map_err(|_| StdError::generic_err("hex decoding error"))?;
-    Ok(data.try_into().unwrap())
-}
-
-pub fn verify_cosmos(
-    deps: Deps,
-    claim_msg: &ClaimMsg,
-    signature: Binary,
-) -> Result<bool, ContractError> {
-    let msg_raw = to_vec(claim_msg)?;
-    let hash = Sha256::digest(&msg_raw);
-    let sig: CosmosSignature = from_binary(&signature).unwrap();
-
-    let result = deps
-        .api
-        .secp256k1_verify(
-            hash.as_ref(),
-            sig.signature.as_slice(),
-            sig.pub_key.as_slice(),
-        )
-        .map_err(|err| ContractError::IsNotEligible {
-            msg: err.to_string(),
-        });
-    return result;
-}
-
-/*
-{"pub_key": "Aoz4+N8ckpDiz4oOKKKVERJGeS49nOgGrXw0s0dkymDr","signature":"CvMkqkQHVPV3DTyVErth16OdTjAwqQD6t+r9ImSpdwUZFin+UPeGSfH9hhuAmqYAp4CffhNNSEisdfzwwvlN/w=="}
- */
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct CosmosSignature {
-    pub_key: Binary,
-    signature: Binary,
 }

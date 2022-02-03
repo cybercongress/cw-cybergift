@@ -27,6 +27,7 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReleaseState {
+    pub address: Addr,
     pub balance_claim: Uint128,
     pub stage: Uint64,
     pub stage_expiration: Expiration,

@@ -1,5 +1,5 @@
 [workspace]
-members = ["contracts/cw-cyber-passport"]
+members = ["contracts/cw-cyber-passport", "contracts/cw-cyber-airdrop"]
 
 [profile.release.package.cw721-marketplace]
 codegen-units = 1

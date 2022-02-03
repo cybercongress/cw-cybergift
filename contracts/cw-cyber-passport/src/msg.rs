@@ -275,6 +275,12 @@ pub struct AddressResponse {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
+pub struct SignatureResponse {
+    pub signed: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
 pub struct MigrateMsg<T> {
     pub version: String,
     pub config: Option<T>,

@@ -191,7 +191,7 @@ pub fn execute_update_name(
 
     // nickname <-> address
     // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate messages?
+    // TODO split in separate submessages?
     let links= vec![
         Link{
             from: address_particle.clone().into(),
@@ -248,7 +248,7 @@ pub fn execute_update_avatar(
 
     // nickname <-> address
     // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate messages?
+    // TODO split in separate submessages?
     let links= vec![
         Link{
             from: address_particle.clone().into(),
@@ -336,7 +336,7 @@ pub fn execute_proof_address(
 
     // prooved_address <-> address
     // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate messages?
+    // TODO split in separate submessages?
     let links= vec![
         Link{
             from: address_particle.clone().into(),
@@ -467,7 +467,7 @@ pub fn execute_transfer_nft(
 
     // nickname <-> address <-> avatar
     // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate messages?
+    // TODO split in separate submessages?
     let links= vec![
         Link{
             from: address_particle.clone().into(),
@@ -507,7 +507,20 @@ pub fn execute_send_nft(
 ) -> Result<Response, ContractError> {
     let cw721_contract = PassportContract::default();
 
-    // TODO remove proved addresses
+    let mut nickname = String::default();
+    let mut avatar = String::default();
+    cw721_contract
+        .tokens
+        .update(deps.storage, &token_id.clone(), |token| match token {
+            Some(mut token_info) => {
+                nickname = token_info.clone().extension.nickname;
+                avatar = token_info.clone().extension.avatar;
+                token_info.extension.addresses = Some(vec![]);
+                Ok(token_info)
+            }
+            None => return Err(ContractError::TokenNotFound {}),
+        })?;
+
     // TODO think about contract as passport holder (cyberlinks/nickname?)
 
     let response = cw721_contract.send_nft(deps, env, info, contract, token_id, msg)?;
@@ -522,9 +535,6 @@ pub fn execute_burn(
 ) -> Result<Response, ContractError> {
     let cw721_contract = PassportContract::default();
 
-
-    // TODO link to cyberhole
-
     let token_info = cw721_contract.tokens.load(deps.storage, &token_id.clone())?;
 
     if !NICKNAMES.has(deps.storage, &token_info.clone().extension.nickname) {
@@ -537,7 +547,7 @@ pub fn execute_burn(
 
     // avatar <-> cyberhole <-> nickname
     // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate messages?
+    // TODO split in separate submessages?
     let links= vec![
         Link{
             from: cyberhole_particle.clone().into(),

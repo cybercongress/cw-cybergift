@@ -3,6 +3,12 @@
 version = 3
 
 [[package]]
+name = "anyhow"
+version = "1.0.53"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94a45b455c14666b85fc40a019e8ab9eb75e3a124e05494f5397122bc9eb06e0"
+
+[[package]]
 name = "arrayref"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -251,6 +257,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-cyber-airdrop"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "base64",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.10.3",
+ "cw-utils",
+ "cw0",
+ "cw2 0.11.1",
+ "cw20",
+ "hex",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sha3",
+ "thiserror",
+]
+
+[[package]]
 name = "cw-cyber-passport"
 version = "0.0.1"
 dependencies = [
@@ -311,6 +339,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw0"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ae676b6cced78a3d38ad4b01ab4ed66fc78ac191c3c0d6bfd5372cb2efd473b"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "cw2"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -330,6 +370,18 @@ checksum = "c1d81d7c359d6c1fba3aa83dad7ec6f999e512571380ae62f81257c3db569743"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus 0.11.1",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "cw20"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9671d7edef5608acaf5b2f1e473ee3f501eced2cd4f7392e2106c8cf02ba0720"
+dependencies = [
+ "cosmwasm-std",
+ "cw-utils",
  "schemars",
  "serde",
 ]
