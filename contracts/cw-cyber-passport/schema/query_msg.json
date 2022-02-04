@@ -89,6 +89,30 @@
     {
       "type": "object",
       "required": [
+        "passport_signed"
+      ],
+      "properties": {
+        "passport_signed": {
+          "type": "object",
+          "required": [
+            "address",
+            "nickname"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            },
+            "nickname": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "owner_of"
       ],
       "properties": {

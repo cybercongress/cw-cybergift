@@ -6,7 +6,7 @@ use cyber_std::CyberMsgWrapper;
 use crate::error::ContractError;
 use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_minter, execute_set_owner, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate};
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::{query_address_by_nickname, query_config, query_metadata_by_nickname, query_passport_by_nickname, query_portid};
+use crate::query::{query_address_by_nickname, query_config, query_metadata_by_nickname, query_passort_signed, query_passport_by_nickname, query_portid};
 use crate::state::{Config, CONFIG, PassportContract, PORTID};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
@@ -64,6 +64,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::AddressByNickname {nickname} => to_binary(&query_address_by_nickname(deps, nickname)?),
         QueryMsg::PassportByNickname {nickname} => to_binary(&query_passport_by_nickname(deps, nickname)?),
         QueryMsg::MetadataByNickname {nickname} => to_binary(&query_metadata_by_nickname(deps, nickname)?),
+        QueryMsg::PassportSigned {nickname, address} => to_binary(&query_passort_signed(deps, nickname, address)?),
         // CW721 methods
         _ => PassportContract::default().query(deps, env, msg.into()),
     }

@@ -47,6 +47,7 @@ cw20 = "0.11"
 cosmwasm-std = { version = "1.0.0-beta" }
 cw-utils = { version = "0.11.0" }
 #cosmwasm-crypto = { version = "1.0.0-beta" }
+cw-cyber-passport = { path = "../cw-cyber-passport" }
 cw-storage-plus = "0.10"
 schemars = "0.8.3"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }

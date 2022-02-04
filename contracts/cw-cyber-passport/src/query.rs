@@ -36,7 +36,7 @@ pub fn query_portid(deps: Deps) -> StdResult<PortidResponse> {
     Ok(PortidResponse { portid: portid.into() })
 }
 
-pub fn query_nickname_address_signed(
+pub fn query_passort_signed(
     deps: Deps,
     nickname: String,
     address: String

@@ -44,7 +44,7 @@ pub enum ExecuteMsg {
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
     },
-    Release { gift_address: String},
+    Release { gift_address: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -92,24 +92,13 @@ pub struct ReleaseStateResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct PassportSignedQuery {
-    pub nickname: String,
-    pub address: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct PassportSignedResponse {
+pub struct SignatureResponse {
     pub signed: bool,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct PassportAddressQuery {
-    pub nickname: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct PassportAddressResponse {
+pub struct AddressResponse {
     pub address: String,
 }
 

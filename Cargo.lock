@@ -264,6 +264,7 @@ dependencies = [
  "base64",
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-cyber-passport",
  "cw-storage-plus 0.10.3",
  "cw-utils",
  "cw0",

@@ -146,6 +146,10 @@ pub enum QueryMsg {
     AddressByNickname { nickname: String },
     PassportByNickname { nickname: String },
     MetadataByNickname { nickname: String },
+    PassportSigned {
+        nickname: String,
+        address: String
+    },
 
     // Standard CW721 queries
     OwnerOf {

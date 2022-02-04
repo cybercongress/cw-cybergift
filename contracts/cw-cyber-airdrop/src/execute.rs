@@ -2,10 +2,11 @@ use cosmwasm_std::{Addr, attr, BankMsg, Coin, Decimal, DepsMut, Env, MessageInfo
 
 use crate::error::ContractError;
 use crate::helpers::{update_coefficient, verify_merkle_proof};
-use crate::msg::{PassportSignedQuery, PassportSignedResponse, PassportAddressQuery, PassportAddressResponse};
 use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE};
-use cw_utils::{Expiration, DAY};
+use cw_utils::{Expiration, DAY, HOUR};
 use std::ops::{Add, Mul};
+use cw_cyber_passport::msg::{QueryMsg as PassportQueryMsg};
+use crate::msg::{AddressResponse, SignatureResponse};
 
 const RELEASE_STAGES: u64 = 9;
 
@@ -137,9 +138,9 @@ pub fn execute_claim(
 
     // is_eligible(deps.as_ref(), &claim_msg, signature)?;
 
-    let res:PassportSignedResponse = deps.querier.query_wasm_smart(
+    let res: SignatureResponse = deps.querier.query_wasm_smart(
         config.clone().passport_addr,
-        &PassportSignedQuery{
+        &PassportQueryMsg::PassportSigned{
                 nickname: nickname.clone(),
                 address: gift_claiming_address.clone()
         }
@@ -161,9 +162,9 @@ pub fn execute_claim(
 
     update_coefficient(deps.storage, claim_amount, &mut config)?;
 
-    let res:PassportAddressResponse = deps.querier.query_wasm_smart(
+    let res: AddressResponse = deps.querier.query_wasm_smart(
         config.passport_addr,
-        &PassportAddressQuery{
+        &PassportQueryMsg::AddressByNickname {
             nickname: nickname.clone(),
         }
     )?;
@@ -229,10 +230,11 @@ pub fn execute_release(
         return Err(ContractError::GiftReleased {});
     }
 
+    // TODO change HOUR to DAY after tests
     let amount: Uint128;
     if release_state.stage.is_zero() {
         amount = release_state.balance_claim.mul(Decimal::percent(10));
-        release_state.stage_expiration = DAY.after(&env.block);
+        release_state.stage_expiration = HOUR.after(&env.block);
         release_state.stage = Uint64::new(RELEASE_STAGES);
     } else {
         if release_state.stage_expiration.is_expired(&env.block) {
@@ -244,7 +246,7 @@ pub fn execute_release(
                 amount = release_state
                     .balance_claim
                     .mul(Decimal::from_ratio(1u128, release_state.stage));
-                release_state.stage_expiration = DAY.after(&env.block);
+                release_state.stage_expiration = HOUR.after(&env.block);
                 release_state.stage = release_state.stage.checked_sub(Uint64::new(1))?;
             }
         } else {
