@@ -144,7 +144,7 @@ pub fn proof_address_cosmos(
     let hash = Sha256::digest(&adr_36_with_message);
     let sig: CosmosSignature = from_binary(&signature).unwrap();
 
-    deps.api.addr_validate(&address.clone())?;
+    // deps.api.addr_validate(&address.clone())?;
     let (prefix, _, _) = bech32::decode(&address.clone()).unwrap();
 
     let address_sig = pub_key_to_address(&deps, &sig.pub_key, &prefix)?;
@@ -173,7 +173,8 @@ fn pub_key_to_address(deps: &Deps, pub_key: &[u8], prefix: &str) -> StdResult<Ad
     ripemd160_hasher.update(Sha256::digest(&compressed_pub_key));
     let addr_bytes = ripemd160_hasher.finalize().to_vec();
     let addr_str = bech32::encode(prefix, addr_bytes.to_base32(), Variant::Bech32).unwrap();
-    deps.api.addr_validate(&addr_str)
+    // deps.api.addr_validate(&addr_str)
+    Ok(Addr::unchecked(&addr_str))
 }
 
 /// Converts uncompressed pub key into compressed one
