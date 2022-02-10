@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::ops::Add;
 
 use bech32::{ToBase32, Variant};
 use cosmwasm_std::{Addr, Binary, Deps, from_binary, StdError, StdResult};
@@ -15,14 +16,17 @@ use crate::error::ContractError;
 pub fn proof_address_ethereum(
     deps: Deps,
     address: String,
+    passport_owner: String,
     message: String,
     signature: Binary,
 ) -> Result<bool, ContractError> {
     let mut hasher = Keccak256::new();
 
+    let msg = passport_owner.add(":").add(&message);
+    println!("msg: {}", msg);
     // TODO add address:particle as sign message, where address is passport holder address
-    hasher.update(format!("\x19Ethereum Signed Message:\n{}", message.len()));
-    hasher.update(message);
+    hasher.update(format!("\x19Ethereum Signed Message:\n{}", msg.len()));
+    hasher.update(msg);
     let hash = hasher.finalize();
     let sig = decode_signature(&signature.clone().to_string())?;
 
@@ -111,10 +115,11 @@ pub fn decode_signature(input: &str) -> StdResult<[u8; 65]> {
 pub fn proof_address_cosmos(
     deps: Deps,
     address: String,
-    _message: String,
+    passport_owner: String,
+    message: String,
     signature: Binary,
 ) -> Result<bool, ContractError> {
-    // build ADR-36 tx, not supported by cosmwasm because json imports float operations inside
+    // TODO clean up before release
     // let obj = json!(
     //     {
     //         "account_number":"0",
@@ -132,16 +137,14 @@ pub fn proof_address_cosmos(
     //         "sequence":"0"
     //     });
 
-    // message already included
-    // TODO add address:particle as sign message, where address is passport holder address
-    let mut adr_36_with_message:Vec<u8> = vec![123,34,97,99,99,111,117,110,116,95,110,117,109,98,101,114,34,58,34,48,34,44,34,99,104,97,105,110,95,105,100,34,58,34,34,44,34,102,101,101,34,58,123,34,97,109,111,117,110,116,34,58,91,93,44,34,103,97,115,34,58,34,48,34,125,44,34,109,101,109,111,34,58,34,34,44,34,109,115,103,115,34,58,91,123,34,116,121,112,101,34,58,34,115,105,103,110,47,77,115,103,83,105,103,110,68,97,116,97,34,44,34,118,97,108,117,101,34,58,123,34,100,97,116,97,34,58,34,85,87,49,83,87,68,104,120,87,87,100,108,87,109,57,90,84,84,78,78,78,88,112,54,85,87,70,88,82,88,66,87,82,109,82,119,97,87,52,50,82,110,90,87,87,72,90,119,78,108,74,81,85,85,115,122,98,51,86,109,86,103,61,61,34,44,34,115,105,103,110,101,114,34,58,34];
-    let mut adr_36_postfix:Vec<u8> = vec![34,125,125,93,44,34,115,101,113,117,101,110,99,101,34,58,34,48,34,125];
-    adr_36_with_message.append(&mut address.clone().as_bytes().to_vec());
-    adr_36_with_message.append(&mut adr_36_postfix);
+    let msg = passport_owner.add(":").add(&message);
+    let mut msg_adr36:Vec<u8> = vec![123,34,97,99,99,111,117,110,116,95,110,117,109,98,101,114,34,58,34,48,34,44,34,99,104,97,105,110,95,105,100,34,58,34,34,44,34,102,101,101,34,58,123,34,97,109,111,117,110,116,34,58,91,93,44,34,103,97,115,34,58,34,48,34,125,44,34,109,101,109,111,34,58,34,34,44,34,109,115,103,115,34,58,91,123,34,116,121,112,101,34,58,34,115,105,103,110,47,77,115,103,83,105,103,110,68,97,116,97,34,44,34,118,97,108,117,101,34,58,123,34,100,97,116,97,34,58,34];
+    msg_adr36.append(&mut base64::encode(msg).as_bytes().to_vec());
+    msg_adr36.append(&mut vec![34,44,34,115,105,103,110,101,114,34,58,34]);
+    msg_adr36.append(&mut address.clone().as_bytes().to_vec());
+    msg_adr36.append(&mut vec![34,125,125,93,44,34,115,101,113,117,101,110,99,101,34,58,34,48,34,125]);
 
-    // println!("raw {:?}", adr_36_prefix_with_message.as_slice());
-    // println!("json {:?}", obj.to_string().as_bytes());
-    let hash = Sha256::digest(&adr_36_with_message);
+    let hash = Sha256::digest(&msg_adr36);
     let sig: CosmosSignature = from_binary(&signature).unwrap();
 
     // deps.api.addr_validate(&address.clone())?;

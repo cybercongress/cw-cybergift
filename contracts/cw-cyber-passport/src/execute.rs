@@ -293,12 +293,12 @@ pub fn execute_proof_address(
 
     let proof_res:bool;
     if decode_address(&address).is_err() {
-        proof_res = proof_address_cosmos(deps.as_ref(), address.clone(), CONSTITUTION.into(), signature)
+        proof_res = proof_address_cosmos(deps.as_ref(), address.clone(), info.sender.to_string(), CONSTITUTION.into(), signature)
             .map_err(|err| ContractError::IsNotEligible {
                 msg: err.to_string(),
         })?;
     } else {
-        proof_res = proof_address_ethereum(deps.as_ref(), address.clone(), CONSTITUTION.into(), signature)
+        proof_res = proof_address_ethereum(deps.as_ref(), address.clone(), info.sender.to_string(),CONSTITUTION.into(), signature)
             .map_err(|err| ContractError::IsNotEligible {
                 msg: err.to_string(),
         })?;

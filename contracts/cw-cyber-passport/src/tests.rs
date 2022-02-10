@@ -105,7 +105,8 @@ mod tests {
         let proof_address_msg = ExecuteMsg::ProofAddress {
             nickname: "test_nickname_new".to_string(),
             address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
-            signature: Binary::from_base64("0x314a5bac145d5fc2fad44d026859c0218afd40dbad8e7bbbfce7bf9f8538d32700e82a636c3520675f2403be64f592d3d8c5d9cb6146576d62c9bf28c2b3e5211c").unwrap(),
+            // signature: Binary::from_base64("0x314a5bac145d5fc2fad44d026859c0218afd40dbad8e7bbbfce7bf9f8538d32700e82a636c3520675f2403be64f592d3d8c5d9cb6146576d62c9bf28c2b3e5211c").unwrap(),
+            signature: Binary::from_base64("0x25e7436c57e830643dc475745c28d98472074d0adb838bef1813859b06c1099619fcc67daa4b65d764c6ea1f93c637f1a8eb40515e639528f2abc5c95b46d3521c").unwrap(),
         };
 
         let info = mock_info(&citizen, &[]);
@@ -121,7 +122,8 @@ mod tests {
         let proof_address_msg = ExecuteMsg::ProofAddress {
             nickname: "test_nickname_new".to_string(),
             address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
-            signature: Binary::from_base64("eyJwdWJfa2V5IjogIkErTVhGcDdZZUxNdm9WbEFVNjZVdTB6M1d0YzlDdXdxMGVvY1VodE5PbW53Iiwic2lnbmF0dXJlIjogIjlPODlDVWRSUlpqMDExQnBoblRzNUpuWU05LzBPMGNoK1hMRzJETmlXcXRZbkE0eEE1QjB3bUZRRE9Rb2dPeEw1eEtXSUxWTW52MUlBLzdzMDVRc0lBPT0ifQ==").unwrap(),
+            // signature: Binary::from_base64("eyJwdWJfa2V5IjogIkErTVhGcDdZZUxNdm9WbEFVNjZVdTB6M1d0YzlDdXdxMGVvY1VodE5PbW53Iiwic2lnbmF0dXJlIjogIjlPODlDVWRSUlpqMDExQnBoblRzNUpuWU05LzBPMGNoK1hMRzJETmlXcXRZbkE0eEE1QjB3bUZRRE9Rb2dPeEw1eEtXSUxWTW52MUlBLzdzMDVRc0lBPT0ifQ==").unwrap(),
+            signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLCJzaWduYXR1cmUiOiJTZG40Z25pQzR2MExJM2Z2U0ZMbmRtM05HZ2VFNUlJWDJOSmZsN1cxWmcxOEplTUNSbHMySkNvK2xUTll0elZKN0RUaFRuK3k0NitXUTdvaWJLaHl4UT09In0=").unwrap(),
         };
 
         let info = mock_info(&citizen, &[]);
@@ -142,7 +144,8 @@ mod tests {
         let proof_address_msg = ExecuteMsg::ProofAddress {
             nickname: "test_nickname_new".to_string(),
             address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
-            signature: Binary::from_base64("0x314a5bac145d5fc2fad44d026859c0218afd40dbad8e7bbbfce7bf9f8538d32700e82a636c3520675f2403be64f592d3d8c5d9cb6146576d62c9bf28c2b3e5211c").unwrap(),
+            // signature: Binary::from_base64("0x314a5bac145d5fc2fad44d026859c0218afd40dbad8e7bbbfce7bf9f8538d32700e82a636c3520675f2403be64f592d3d8c5d9cb6146576d62c9bf28c2b3e5211c").unwrap(),
+            signature: Binary::from_base64("0x25e7436c57e830643dc475745c28d98472074d0adb838bef1813859b06c1099619fcc67daa4b65d764c6ea1f93c637f1a8eb40515e639528f2abc5c95b46d3521c").unwrap(),
         };
 
         let info = mock_info(&citizen, &[]);
@@ -153,7 +156,8 @@ mod tests {
         let proof_address_msg = ExecuteMsg::ProofAddress {
             nickname: "test_nickname_new".to_string(),
             address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
-            signature: Binary::from_base64("eyJwdWJfa2V5IjogIkErTVhGcDdZZUxNdm9WbEFVNjZVdTB6M1d0YzlDdXdxMGVvY1VodE5PbW53Iiwic2lnbmF0dXJlIjogIjlPODlDVWRSUlpqMDExQnBoblRzNUpuWU05LzBPMGNoK1hMRzJETmlXcXRZbkE0eEE1QjB3bUZRRE9Rb2dPeEw1eEtXSUxWTW52MUlBLzdzMDVRc0lBPT0ifQ==").unwrap(),
+            // signature: Binary::from_base64("eyJwdWJfa2V5IjogIkErTVhGcDdZZUxNdm9WbEFVNjZVdTB6M1d0YzlDdXdxMGVvY1VodE5PbW53Iiwic2lnbmF0dXJlIjogIjlPODlDVWRSUlpqMDExQnBoblRzNUpuWU05LzBPMGNoK1hMRzJETmlXcXRZbkE0eEE1QjB3bUZRRE9Rb2dPeEw1eEtXSUxWTW52MUlBLzdzMDVRc0lBPT0ifQ==").unwrap(),
+            signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLCJzaWduYXR1cmUiOiJTZG40Z25pQzR2MExJM2Z2U0ZMbmRtM05HZ2VFNUlJWDJOSmZsN1cxWmcxOEplTUNSbHMySkNvK2xUTll0elZKN0RUaFRuK3k0NitXUTdvaWJLaHl4UT09In0=").unwrap(),
         };
 
         let info = mock_info(&citizen, &[]);
