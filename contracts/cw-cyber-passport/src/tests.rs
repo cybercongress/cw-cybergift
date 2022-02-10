@@ -7,7 +7,7 @@ mod tests {
     use crate::state::PassportMetadata;
     use crate::contract::{execute, instantiate};
     use crate::error::ContractError;
-    use crate::query::{query_config, query_metadata_by_nickname, query_passport_by_nickname, query_portid};
+    use crate::query::{query_active_passport, query_config, query_metadata_by_nickname, query_passport_by_nickname, query_portid};
 
     #[test]
     fn proper_initialization() {
@@ -68,6 +68,7 @@ mod tests {
             }
         };
         assert_eq!(query_passport_by_nickname(deps.as_ref(), "test_nickname".into()).unwrap(), expected_passport);
+        assert_eq!(query_active_passport(deps.as_ref(), citizen.into()).unwrap(), expected_passport);
 
         let update_name_msg = ExecuteMsg::UpdateName {
             old_nickname: "test_nickname".to_string(),

@@ -23,7 +23,6 @@ pub fn proof_address_ethereum(
     let mut hasher = Keccak256::new();
 
     let msg = passport_owner.add(":").add(&message);
-    println!("msg: {}", msg);
     // TODO add address:particle as sign message, where address is passport holder address
     hasher.update(format!("\x19Ethereum Signed Message:\n{}", msg.len()));
     hasher.update(msg);

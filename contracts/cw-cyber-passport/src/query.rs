@@ -1,7 +1,7 @@
 use cosmwasm_std::{Deps, StdResult};
 use cw721_base::state::TokenInfo;
 use crate::msg::{ConfigResponse, PortidResponse, AddressResponse, SignatureResponse};
-use crate::state::{CONFIG, NICKNAMES, PassportContract, PassportMetadata, PORTID};
+use crate::state::{ACTIVE, CONFIG, NICKNAMES, PassportContract, PassportMetadata, PORTID};
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
@@ -34,6 +34,15 @@ pub fn query_address_by_nickname(deps: Deps, nickname: String) -> StdResult<Addr
 pub fn query_portid(deps: Deps) -> StdResult<PortidResponse> {
     let portid = PORTID.load(deps.storage)?;
     Ok(PortidResponse { portid: portid.into() })
+}
+
+pub fn query_active_passport(deps: Deps, address: String) -> StdResult<TokenInfo<PassportMetadata>> {
+    let active = ACTIVE.load(deps.storage, &deps.api.addr_validate(&address)?)?;
+    let cw721_contract = PassportContract::default();
+    let token_info = cw721_contract
+        .tokens
+        .load(deps.storage, &active)?;
+    Ok(token_info)
 }
 
 pub fn query_passort_signed(

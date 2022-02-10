@@ -20,8 +20,10 @@ pub struct AddressPortID {
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const NICKNAMES: Map<&str, AddressPortID> = Map::new("nicknames");
 pub const PORTID: Item<u64> = Item::new("portid");
+
+pub const ACTIVE: Map<&Addr, String> = Map::new("active");
+pub const NICKNAMES: Map<&str, AddressPortID> = Map::new("nicknames");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]

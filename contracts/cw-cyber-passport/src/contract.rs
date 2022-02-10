@@ -4,9 +4,9 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, StdResult, to_binary
 use cyber_std::CyberMsgWrapper;
 
 use crate::error::ContractError;
-use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_minter, execute_set_owner, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate};
+use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate};
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::{query_address_by_nickname, query_config, query_metadata_by_nickname, query_passort_signed, query_passport_by_nickname, query_portid};
+use crate::query::{query_active_passport, query_address_by_nickname, query_config, query_metadata_by_nickname, query_passort_signed, query_passport_by_nickname, query_portid};
 use crate::state::{Config, CONFIG, PassportContract, PORTID};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
@@ -43,6 +43,7 @@ pub fn execute(
         ExecuteMsg::RemoveAddress {nickname, address } => execute_remove_address(deps, env, info, nickname, address),
         ExecuteMsg::SetMinter { minter } => execute_set_minter(deps, env, info, minter),
         ExecuteMsg::SetOwner { owner } => execute_set_owner(deps, env, info, owner),
+        ExecuteMsg::SetActive { token_id } => execute_set_active(deps, env, info, token_id),
         // Overwrite CW721 methods
         ExecuteMsg::TransferNft { recipient, token_id} => execute_transfer_nft(deps, env, info, recipient, token_id),
         ExecuteMsg::SendNft { contract, token_id, msg} => execute_send_nft(deps, env, info, contract, token_id, msg),
@@ -65,6 +66,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::PassportByNickname {nickname} => to_binary(&query_passport_by_nickname(deps, nickname)?),
         QueryMsg::MetadataByNickname {nickname} => to_binary(&query_metadata_by_nickname(deps, nickname)?),
         QueryMsg::PassportSigned {nickname, address} => to_binary(&query_passort_signed(deps, nickname, address)?),
+        QueryMsg::ActivePassport { address } => to_binary(&query_active_passport(deps, address)?),
         // CW721 methods
         _ => PassportContract::default().query(deps, env, msg.into()),
     }

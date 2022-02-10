@@ -15,7 +15,7 @@ use cyber_std::{
 
 use crate::error::ContractError;
 use crate::helpers::{proof_address_cosmos, proof_address_ethereum, decode_address};
-use crate::state::{AddressPortID, Extension, NICKNAMES, PassportContract, PassportMetadata, PORTID};
+use crate::state::{ACTIVE, AddressPortID, Extension, NICKNAMES, PassportContract, PassportMetadata, PORTID};
 use crate::state::{Config, CONFIG};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
@@ -92,10 +92,14 @@ pub fn execute_create_passport(
         deps.storage,
         &nickname,
         &AddressPortID{
-            address: info.sender,
+            address: info.clone().sender,
             portid: last_portid.to_string()
         }
     )?;
+
+    if !ACTIVE.has(deps.storage, &info.clone().sender) {
+        ACTIVE.save(deps.storage, &info.clone().sender, &last_portid.to_string())?;
+    }
 
     // // let sub = SubMsg::reply_on_success(msg, CYBERLINK_ID).with_gas_limit(128_000);
     // let response = cw721_contract.mint(deps, env, info, mint_msg)?;
@@ -461,6 +465,13 @@ pub fn execute_transfer_nft(
         }
     )?;
 
+    if ACTIVE.has(deps.storage, &info.clone().sender) {
+        let active = ACTIVE.load(deps.storage, &info.clone().sender)?;
+        if active == token_id {
+            ACTIVE.remove(deps.storage, &info.clone().sender);
+        }
+    }
+
     let nick_particle = _prepare_particle(nickname.clone());
     let avatar_particle = _check_particle(avatar.clone())?;
     let address_particle = _prepare_particle(info.clone().sender.into());
@@ -521,6 +532,13 @@ pub fn execute_send_nft(
             None => return Err(ContractError::TokenNotFound {}),
         })?;
 
+    if ACTIVE.has(deps.storage, &info.clone().sender) {
+        let active = ACTIVE.load(deps.storage, &info.clone().sender)?;
+        if active == token_id {
+            ACTIVE.remove(deps.storage, &info.clone().sender);
+        }
+    }
+
     // TODO think about contract as passport holder (cyberlinks/nickname?)
 
     let response = cw721_contract.send_nft(deps, env, info, contract, token_id, msg)?;
@@ -544,6 +562,13 @@ pub fn execute_burn(
 
     let nick_particle = _prepare_particle(token_info.clone().extension.nickname);
     let cyberhole_particle = _prepare_particle("cyberhole".into());
+
+    if ACTIVE.has(deps.storage, &info.clone().sender) {
+        let active = ACTIVE.load(deps.storage, &info.clone().sender)?;
+        if active == token_id {
+            ACTIVE.remove(deps.storage, &info.clone().sender);
+        }
+    }
 
     // avatar <-> cyberhole <-> nickname
     // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
@@ -620,6 +645,25 @@ pub fn execute_set_owner(
 
     Ok(Response::new().add_attributes(vec![
         attr("action", "update_owner")
+    ]))
+}
+
+pub fn execute_set_active(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    token_id: String,
+) -> Result<Response, ContractError> {
+    let cw721_contract = PassportContract::default();
+    let nft_owner = cw721_contract.owner_of(deps.as_ref(), env, token_id.clone(), false)?;
+    if nft_owner.owner != info.clone().sender {
+        return Err(ContractError::Unauthorized {});
+    }
+    ACTIVE.save(deps.storage, &info.clone().sender, &token_id.clone())?;
+    Ok(Response::new().add_attributes(vec![
+        attr("action", "set_active"),
+        attr("address", info.sender.to_string()),
+        attr("token_id", token_id)
     ]))
 }
 

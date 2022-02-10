@@ -66,6 +66,7 @@ pub enum ExecuteMsg {
     },
     SetMinter { minter: String },
     SetOwner { owner: String },
+    SetActive { token_id: String },
 
     // Overwrite Standard CW721 ExecuteMsg
 
@@ -150,6 +151,7 @@ pub enum QueryMsg {
         nickname: String,
         address: String
     },
+    ActivePassport { address: String },
 
     // Standard CW721 queries
     OwnerOf {
