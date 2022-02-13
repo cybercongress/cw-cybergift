@@ -113,6 +113,26 @@
     {
       "type": "object",
       "required": [
+        "active_passport"
+      ],
+      "properties": {
+        "active_passport": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "owner_of"
       ],
       "properties": {

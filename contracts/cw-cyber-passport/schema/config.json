@@ -3,10 +3,22 @@
   "title": "Config",
   "type": "object",
   "required": [
-    "owner"
+    "avatar_subspace",
+    "name_subspace",
+    "owner",
+    "proof_subspace"
   ],
   "properties": {
+    "avatar_subspace": {
+      "$ref": "#/definitions/Addr"
+    },
+    "name_subspace": {
+      "$ref": "#/definitions/Addr"
+    },
     "owner": {
+      "$ref": "#/definitions/Addr"
+    },
+    "proof_subspace": {
       "$ref": "#/definitions/Addr"
     }
   },

@@ -167,6 +167,54 @@
       "additionalProperties": false
     },
     {
+      "type": "object",
+      "required": [
+        "set_active"
+      ],
+      "properties": {
+        "set_active": {
+          "type": "object",
+          "required": [
+            "token_id"
+          ],
+          "properties": {
+            "token_id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "set_subspaces"
+      ],
+      "properties": {
+        "set_subspaces": {
+          "type": "object",
+          "required": [
+            "avatar_subspace",
+            "name_subspace",
+            "proof_subspace"
+          ],
+          "properties": {
+            "avatar_subspace": {
+              "type": "string"
+            },
+            "name_subspace": {
+              "type": "string"
+            },
+            "proof_subspace": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Transfer is a base message to move a token to another account without triggering actions",
       "type": "object",
       "required": [

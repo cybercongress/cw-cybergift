@@ -3,15 +3,14 @@ use std::str::FromStr;
 
 use cid::{Cid, Version};
 use cid::multihash::{Code, MultihashDigest};
-use cosmwasm_std::{attr, Binary, DepsMut, Env, MessageInfo, Uint128};
+use cosmwasm_std::{attr, Binary, DepsMut, Env, MessageInfo, ReplyOn, SubMsg, to_binary, Uint128, WasmMsg};
 use cw2::{get_contract_version, set_contract_version};
 use cw721::{Cw721Execute, Cw721Query};
 use cw721_base::MintMsg;
 use cw_utils::must_pay;
+use cw_cyber_subgraph::msg::{ExecuteMsg as SubgraphExecuteMsg};
 
-use cyber_std::{
-    create_cyberlink_msg, CyberMsgWrapper, Link,
-};
+use cyber_std::{CyberMsgWrapper, Link};
 
 use crate::error::ContractError;
 use crate::helpers::{proof_address_cosmos, proof_address_ethereum, decode_address};
@@ -22,6 +21,7 @@ type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
 // TODO discuss and make this configurable in config
 const CONSTITUTION: &str = "QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV";
+pub const CYBERLINK_ID_MSG: u64 = 42;
 
 pub fn execute_create_passport(
     deps: DepsMut,
@@ -49,30 +49,53 @@ pub fn execute_create_passport(
     let avatar_particle = _check_particle(avatar.clone())?;
     let address_particle = _prepare_particle(info.clone().sender.into());
 
-    // nickname <-> address <-> avatar
-    // NOTE if one of cyberlinks from the set is exist it will revert whole message and other links
-    // TODO split in separate submessages?
-    let links= vec![
-        Link{
-            from: address_particle.clone().into(),
-            to: nick_particle.clone().into(),
-        },
-        Link{
-            from: address_particle.clone().into(),
-            to: avatar_particle.clone().into()
-        },
-        Link{
-            from: nick_particle.clone().into(),
-            to: address_particle.clone().into()
-        },
-        Link{
-            from: avatar_particle.clone().into(),
-            to: address_particle.clone().into()
-        }
-    ];
 
-    let contract = env.clone().contract.address;
-    let cyberlink_msg = create_cyberlink_msg(contract.into(), links);
+    let config = CONFIG.load(deps.storage)?;
+
+    // nickname <-> address <-> avatar
+    let name_subgraph_submsg = SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr: config.name_subspace.into(),
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links: vec![
+                    Link{
+                        from: address_particle.clone().into(),
+                        to: nick_particle.clone().into(),
+                    },
+                    Link{
+                        from: nick_particle.clone().into(),
+                        to: address_particle.clone().into()
+                    },
+                ],
+            })?,
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success
+    };
+
+    let avatar_subgraph_submsg = SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr: config.avatar_subspace.into(),
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links: vec![
+                    Link{
+                        from: address_particle.clone().into(),
+                        to: avatar_particle.clone().into()
+                    },
+                    Link{
+                        from: avatar_particle.clone().into(),
+                        to: address_particle.clone().into()
+                    }
+                ],
+            })?,
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success
+    };
 
     let last_portid = PORTID.load(deps.storage).unwrap().add(1);
     let mint_msg = MintMsg {
@@ -101,13 +124,6 @@ pub fn execute_create_passport(
         ACTIVE.save(deps.storage, &info.clone().sender, &last_portid.to_string())?;
     }
 
-    // // let sub = SubMsg::reply_on_success(msg, CYBERLINK_ID).with_gas_limit(128_000);
-    // let response = cw721_contract.mint(deps, env, info, mint_msg)?;
-    // // https://github.com/cybercongress/go-cyber/blob/main/x/graph/types/errors.go#L8
-    // // TODO run transaction if cyberlink already exist (graph error)
-    // // TODO fail transaction in all other error cases (graph errors) or ignore this case
-    // // Ok(response.add_submessage(sub))
-
     let internal_info = MessageInfo {
         sender: env.clone().contract.address,
         funds: info.funds,
@@ -115,11 +131,21 @@ pub fn execute_create_passport(
 
     let response = cw721_contract.mint(deps, env, internal_info, mint_msg)?;
 
-    Ok(response.add_message(cyberlink_msg))
+    Ok(response
+        .add_submessage(name_subgraph_submsg)
+        .add_submessage(avatar_subgraph_submsg)
+    )
 }
 
 fn _prepare_particle(input: String) -> Cid {
-    let h = Code::Sha2_256.digest(&input.as_bytes());
+
+    // unixfs/dagnode/proto shortcut
+    let length: u8 = input.len() as u8;
+    let mut raw: Vec<u8> = vec![10, length.add(6) as u8, 8, 2, 18, length];
+    raw.append(&mut input.as_bytes().to_vec());
+    raw.append(&mut vec![24, length]);
+
+    let h = Code::Sha2_256.digest(&raw.as_slice());
     let particle = Cid::new_v0(h).unwrap();
     particle
 }
@@ -193,25 +219,33 @@ pub fn execute_update_name(
     let nick_particle = _prepare_particle(new_name.clone());
     let address_particle = _prepare_particle(info.clone().sender.into());
 
-    // nickname <-> address
-    // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate submessages?
-    let links= vec![
-        Link{
-            from: address_particle.clone().into(),
-            to: nick_particle.clone().into(),
-        },
-        Link{
-            from: nick_particle.clone().into(),
-            to: address_particle.clone().into()
-        }
-    ];
+    let config = CONFIG.load(deps.storage)?;
 
-    let contract = env.clone().contract.address;
-    let cyberlink_msg = create_cyberlink_msg(contract.into(), links);
+    // nickname <-> address
+    let name_subgraph_submsg = SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr: config.name_subspace.into(),
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links: vec![
+                    Link{
+                        from: address_particle.clone().into(),
+                        to: nick_particle.clone().into(),
+                    },
+                    Link{
+                        from: nick_particle.clone().into(),
+                        to: address_particle.clone().into()
+                    },
+                ],
+            })?,
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success
+    };
 
     Ok(Response::new()
-        .add_message(cyberlink_msg)
+        .add_submessage(name_subgraph_submsg)
         .add_attributes(vec![
             attr("action", "update_nickname"),
             attr("old_name", old_name),
@@ -250,25 +284,33 @@ pub fn execute_update_avatar(
     let avatar_particle = _check_particle(new_avatar.clone())?;
     let address_particle = _prepare_particle(info.clone().sender.into());
 
-    // nickname <-> address
-    // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate submessages?
-    let links= vec![
-        Link{
-            from: address_particle.clone().into(),
-            to: avatar_particle.clone().into(),
-        },
-        Link{
-            from: avatar_particle.clone().into(),
-            to: address_particle.clone().into()
-        }
-    ];
+    let config = CONFIG.load(deps.storage)?;
 
-    let contract = env.clone().contract.address;
-    let cyberlink_msg = create_cyberlink_msg(contract.into(), links);
+    // nickname <-> address
+    let avatar_subgraph_submsg = SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr: config.avatar_subspace.into(),
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links: vec![
+                    Link{
+                        from: address_particle.clone().into(),
+                        to: avatar_particle.clone().into()
+                    },
+                    Link{
+                        from: avatar_particle.clone().into(),
+                        to: address_particle.clone().into()
+                    }
+                ],
+            })?,
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success
+    };
 
     Ok(Response::new()
-        .add_message(cyberlink_msg)
+        .add_submessage(avatar_subgraph_submsg)
         .add_attributes(vec![
             attr("action", "update_avatar"),
             attr("nickname", nickname),
@@ -338,25 +380,33 @@ pub fn execute_proof_address(
     let proved_address_particle = _prepare_particle(address.clone());
     let address_particle = _prepare_particle(info.clone().sender.into());
 
-    // prooved_address <-> address
-    // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate submessages?
-    let links= vec![
-        Link{
-            from: address_particle.clone().into(),
-            to: proved_address_particle.clone().into(),
-        },
-        Link{
-            from: proved_address_particle.clone().into(),
-            to: address_particle.clone().into()
-        }
-    ];
+    let config = CONFIG.load(deps.storage)?;
 
-    let contract = env.clone().contract.address;
-    let cyberlink_msg = create_cyberlink_msg(contract.into(), links);
+    // proved_address <-> address
+    let proof_subgraph_submsg = SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr: config.proof_subspace.into(),
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links: vec![
+                    Link{
+                        from: address_particle.clone().into(),
+                        to: proved_address_particle.clone().into(),
+                    },
+                    Link{
+                        from: proved_address_particle.clone().into(),
+                        to: address_particle.clone().into()
+                    }
+                ],
+            })?,
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success
+    };
 
     Ok(Response::new()
-        .add_message(cyberlink_msg)
+        .add_submessage(proof_subgraph_submsg)
         .add_attributes(vec![
             attr("action", "proof_address"),
             attr("nickname", nickname),
@@ -437,6 +487,8 @@ pub fn execute_transfer_nft(
     recipient: String,
     token_id: String,
 ) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
     let cw721_contract = PassportContract::default();
 
     let mut nickname = String::default();
@@ -477,34 +529,54 @@ pub fn execute_transfer_nft(
     let address_particle = _prepare_particle(info.clone().sender.into());
 
     // nickname <-> address <-> avatar
-    // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate submessages?
-    let links= vec![
-        Link{
-            from: address_particle.clone().into(),
-            to: nick_particle.clone().into(),
-        },
-        Link{
-            from: address_particle.clone().into(),
-            to: avatar_particle.clone().into()
-        },
-        Link{
-            from: nick_particle.clone().into(),
-            to: address_particle.clone().into()
-        },
-        Link{
-            from: avatar_particle.clone().into(),
-            to: address_particle.clone().into()
-        }
-    ];
+    let name_subgraph_submsg = SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr: config.name_subspace.into(),
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links: vec![
+                    Link{
+                        from: address_particle.clone().into(),
+                        to: nick_particle.clone().into(),
+                    },
+                    Link{
+                        from: nick_particle.clone().into(),
+                        to: address_particle.clone().into()
+                    },
+                ],
+            })?,
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success
+    };
 
-    let contract = env.clone().contract.address;
-    let cyberlink_msg = create_cyberlink_msg(contract.into(), links);
+    let avatar_subgraph_submsg = SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr: config.avatar_subspace.into(),
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links: vec![
+                    Link{
+                        from: address_particle.clone().into(),
+                        to: avatar_particle.clone().into()
+                    },
+                    Link{
+                        from: avatar_particle.clone().into(),
+                        to: address_particle.clone().into()
+                    }
+                ],
+            })?,
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success
+    };
 
     let response = cw721_contract.transfer_nft(deps, env, info, recipient, token_id)?;
-
     Ok(response
-        .add_message(cyberlink_msg)
+        .add_submessage(name_subgraph_submsg)
+        .add_submessage(avatar_subgraph_submsg)
     )
 }
 
@@ -570,35 +642,57 @@ pub fn execute_burn(
         }
     }
 
+    let config = CONFIG.load(deps.storage)?;
     // avatar <-> cyberhole <-> nickname
-    // NOTE if one of cyberlinks from set is exist it will revert whole message and other links
-    // TODO split in separate submessages?
-    let links= vec![
-        Link{
-            from: cyberhole_particle.clone().into(),
-            to: nick_particle.clone().into(),
-        },
-        Link{
-            from: nick_particle.clone().into(),
-            to: cyberhole_particle.clone().into()
-        },
-        Link{
-            from: cyberhole_particle.clone().into(),
-            to: token_info.extension.avatar.clone().into()
-        },
-        Link{
-            from: token_info.extension.avatar.clone().into(),
-            to: cyberhole_particle.clone().into()
-        }
-    ];
+    let name_subgraph_submsg = SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr: config.name_subspace.into(),
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links: vec![
+                    Link{
+                        from: cyberhole_particle.clone().into(),
+                        to: nick_particle.clone().into(),
+                    },
+                    Link{
+                        from: nick_particle.clone().into(),
+                        to: cyberhole_particle.clone().into()
+                    },
+                ],
+            })?,
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success
+    };
 
-    let contract = env.clone().contract.address;
-    let cyberlink_msg = create_cyberlink_msg(contract.into(), links);
+    let avatar_subgraph_submsg = SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr: config.avatar_subspace.into(),
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links: vec![
+                    Link{
+                        from: cyberhole_particle.clone().into(),
+                        to: token_info.extension.avatar.clone().into()
+                    },
+                    Link{
+                        from: token_info.extension.avatar.clone().into(),
+                        to: cyberhole_particle.clone().into()
+                    }
+                ],
+            })?,
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Success
+    };
 
     let response = cw721_contract.burn(deps, env, info, token_id)?;
 
     Ok(response
-        .add_message(cyberlink_msg)
+        .add_submessage(name_subgraph_submsg)
+        .add_submessage(avatar_subgraph_submsg)
     )
 }
 
@@ -664,6 +758,39 @@ pub fn execute_set_active(
         attr("action", "set_active"),
         attr("address", info.sender.to_string()),
         attr("token_id", token_id)
+    ]))
+}
+
+pub fn execute_set_subspaces(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    new_name_subspace: String,
+    new_avatar_subspace: String,
+    new_proof_subspace: String,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    let owner = config.owner;
+    if info.sender != owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let name_subspace = deps.api.addr_validate(&new_name_subspace)?;
+    let avatar_subspace = deps.api.addr_validate(&new_avatar_subspace)?;
+    let proof_subspace = deps.api.addr_validate(&new_proof_subspace)?;
+
+    CONFIG.update(
+        deps.storage,
+        |mut config| -> Result<Config, ContractError> {
+            config.name_subspace = name_subspace;
+            config.avatar_subspace = avatar_subspace;
+            config.proof_subspace = proof_subspace;
+            Ok(config)
+        },
+    )?;
+
+    Ok(Response::new().add_attributes(vec![
+        attr("action", "update_subspaces")
     ]))
 }
 

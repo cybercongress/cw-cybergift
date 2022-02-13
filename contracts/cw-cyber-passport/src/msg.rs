@@ -26,6 +26,10 @@ pub struct InstantiateMsg {
     pub minter: String,
 
     pub owner: String,
+
+    pub name_subspace: String,
+    pub avatar_subspace: String,
+    pub proof_subspace: String,
 }
 
 impl From<InstantiateMsg> for CW721InstantiateMsg {
@@ -67,6 +71,11 @@ pub enum ExecuteMsg {
     SetMinter { minter: String },
     SetOwner { owner: String },
     SetActive { token_id: String },
+    SetSubspaces {
+        name_subspace: String,
+        avatar_subspace: String,
+        proof_subspace: String,
+    },
 
     // Overwrite Standard CW721 ExecuteMsg
 
@@ -265,6 +274,9 @@ impl From<QueryMsg> for CW721QueryMsg {
 #[serde(rename_all = "snake_case")]
 pub struct ConfigResponse {
     pub owner: String,
+    pub name_subspace: String,
+    pub avatar_subspace: String,
+    pub proof_subspace: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

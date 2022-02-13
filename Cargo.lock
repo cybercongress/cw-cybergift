@@ -289,6 +289,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
+ "cw-cyber-subgraph",
  "cw-storage-plus 0.10.3",
  "cw-utils",
  "cw2 0.10.3",

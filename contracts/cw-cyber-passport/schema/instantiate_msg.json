@@ -3,12 +3,18 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "avatar_subspace",
     "minter",
     "name",
+    "name_subspace",
     "owner",
+    "proof_subspace",
     "symbol"
   ],
   "properties": {
+    "avatar_subspace": {
+      "type": "string"
+    },
     "minter": {
       "description": "The minter is the only one who can create new NFTs. This is designed for a base NFT that is controlled by an external program or contract. You will likely replace this with custom logic in custom NFTs",
       "type": "string"
@@ -17,7 +23,13 @@
       "description": "Name of the NFT contract",
       "type": "string"
     },
+    "name_subspace": {
+      "type": "string"
+    },
     "owner": {
+      "type": "string"
+    },
+    "proof_subspace": {
       "type": "string"
     },
     "symbol": {

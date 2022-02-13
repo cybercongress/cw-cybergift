@@ -50,6 +50,7 @@ serde = { version = "1.0.127", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.26" }
 cid = "0.7.0"
 cyber-std = { path = "../cyber-std" }
+cw-cyber-subgraph = { path = "../cw-cyber-subgraph" }
 cw-utils = { version = "0.11.1" }
 hex = "0.4"
 sha2 = { version = "0.9.5", default-features = false }

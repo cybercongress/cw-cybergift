@@ -1,10 +1,10 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, StdResult, to_binary};
+use cosmwasm_std::{Binary, ContractResult, Deps, DepsMut, Env, MessageInfo, Reply, StdResult, to_binary};
 use cyber_std::CyberMsgWrapper;
 
 use crate::error::ContractError;
-use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate};
+use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_set_subspaces, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate, CYBERLINK_ID_MSG};
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{query_active_passport, query_address_by_nickname, query_config, query_metadata_by_nickname, query_passort_signed, query_passport_by_nickname, query_portid};
 use crate::state::{Config, CONFIG, PassportContract, PORTID};
@@ -20,6 +20,9 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     let config = Config {
         owner: deps.api.addr_validate(&msg.clone().owner)?,
+        name_subspace: deps.api.addr_validate(&msg.clone().name_subspace)?,
+        avatar_subspace: deps.api.addr_validate(&msg.clone().avatar_subspace)?,
+        proof_subspace: deps.api.addr_validate(&msg.clone().proof_subspace)?
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -44,6 +47,11 @@ pub fn execute(
         ExecuteMsg::SetMinter { minter } => execute_set_minter(deps, env, info, minter),
         ExecuteMsg::SetOwner { owner } => execute_set_owner(deps, env, info, owner),
         ExecuteMsg::SetActive { token_id } => execute_set_active(deps, env, info, token_id),
+        ExecuteMsg::SetSubspaces {
+            name_subspace,
+            avatar_subspace,
+            proof_subspace
+        } => execute_set_subspaces(deps, env, info, name_subspace, avatar_subspace, proof_subspace),
         // Overwrite CW721 methods
         ExecuteMsg::TransferNft { recipient, token_id} => execute_transfer_nft(deps, env, info, recipient, token_id),
         ExecuteMsg::SendNft { contract, token_id, msg} => execute_send_nft(deps, env, info, contract, token_id, msg),
@@ -70,6 +78,18 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         // CW721 methods
         _ => PassportContract::default().query(deps, env, msg.into()),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(_deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
+    if reply.id != CYBERLINK_ID_MSG {
+        return Err(ContractError::UnknownReplyId { id: reply.id });
+    }
+    // let res = match reply.result {
+    //     ContractResult::Ok(_) => Response::new(),
+    //     ContractResult::Err(_) => Response::new()
+    // };
+    Ok(Response::new())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

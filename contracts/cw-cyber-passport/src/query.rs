@@ -5,7 +5,12 @@ use crate::state::{ACTIVE, CONFIG, NICKNAMES, PassportContract, PassportMetadata
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
-    Ok(ConfigResponse { owner: cfg.owner.into() })
+    Ok(ConfigResponse {
+        owner: cfg.owner.into(),
+        name_subspace: cfg.name_subspace.into(),
+        avatar_subspace: cfg.avatar_subspace.into(),
+        proof_subspace: cfg.proof_subspace.into(),
+    })
 }
 
 pub fn query_metadata_by_nickname(deps: Deps, nickname: String) -> StdResult<PassportMetadata> {
