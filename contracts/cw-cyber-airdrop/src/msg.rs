@@ -9,6 +9,7 @@ pub struct InstantiateMsg {
     /// Owner if none set to info.sender.
     pub owner: Option<String>,
     pub passport: String,
+    pub treasury: String,
     pub allowed_native: String,
     pub initial_balance: Uint128,
     pub coefficient_up: Uint128,

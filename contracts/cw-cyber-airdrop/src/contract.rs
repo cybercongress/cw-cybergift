@@ -8,6 +8,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG};
 use crate::execute::{execute_claim, execute_register_merkle_root, execute_release, execute_update_owner, execute_update_passport, execute_update_target};
 use crate::query::{query_config, query_is_claimed, query_merkle_root, query_release_state};
+use cw1_subkeys::msg::{ExecuteMsg as Cw1ExecuteMsg};
 
 // Version info, for migration info
 const CONTRACT_NAME: &str = "crates.io:cw-cyber-gift";
@@ -39,6 +40,7 @@ pub fn instantiate(
     let config = Config {
         owner: Some(owner),
         passport_addr: deps.api.addr_validate(&msg.passport)?,
+        treasury_addr: deps.api.addr_validate(&msg.treasury)?,
         target_claim: msg.target_claim,
         allowed_native: msg.allowed_native,
         current_balance: msg.initial_balance,
