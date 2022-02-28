@@ -2,7 +2,7 @@ use std::convert::TryInto;
 use std::ops::Add;
 
 use bech32::{ToBase32, Variant};
-use cosmwasm_std::{Addr, Binary, Deps, from_binary, StdError, StdResult};
+use cosmwasm_std::{Addr, Binary, Deps, from_binary, ReplyOn, StdError, StdResult, SubMsg, to_binary, WasmMsg};
 use primitive_types::H256;
 use ripemd160::Digest as Ripemd160Digest;
 use ripemd160::Ripemd160;
@@ -10,8 +10,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use sha3::Keccak256;
-
+use cyber_std::{CyberMsgWrapper, Link};
+use cw_cyber_subgraph::msg::{ExecuteMsg as SubgraphExecuteMsg};
 use crate::error::ContractError;
+use crate::execute::CYBERLINK_ID_MSG;
 
 pub fn proof_address_ethereum(
     deps: Deps,
@@ -169,7 +171,7 @@ pub fn proof_address_cosmos(
 }
 
 /// Converts user pubkey into Addr with given prefix
-fn pub_key_to_address(deps: &Deps, pub_key: &[u8], prefix: &str) -> StdResult<Addr> {
+fn pub_key_to_address(_deps: &Deps, pub_key: &[u8], prefix: &str) -> StdResult<Addr> {
     let compressed_pub_key = to_compressed_pub_key(pub_key)?;
     let mut ripemd160_hasher = Ripemd160::new();
     ripemd160_hasher.update(Sha256::digest(&compressed_pub_key));
@@ -213,4 +215,22 @@ fn to_compressed_pub_key(pub_key: &[u8]) -> StdResult<Vec<u8>> {
 pub struct CosmosSignature {
     pub_key: Binary,
     signature: Binary,
+}
+
+pub fn prepare_cyberlink_submsg(
+    contract_addr: String,
+    links: Vec<Link>
+) -> SubMsg<CyberMsgWrapper> {
+    return SubMsg {
+        id: CYBERLINK_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr,
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links
+            }).unwrap(),
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Never
+    }
 }

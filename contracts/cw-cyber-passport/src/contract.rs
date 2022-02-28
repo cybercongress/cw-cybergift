@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, ContractResult, Deps, DepsMut, Env, MessageInfo, Reply, StdResult, to_binary};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Reply, StdResult, to_binary};
 use cyber_std::CyberMsgWrapper;
 
 use crate::error::ContractError;
