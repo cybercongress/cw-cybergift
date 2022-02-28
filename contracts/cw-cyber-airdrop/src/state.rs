@@ -11,6 +11,7 @@ pub struct Config {
     /// Owner If None set, contract is frozen.
     pub owner: Option<Addr>,
     pub passport_addr: Addr,
+    pub treasury_addr: Addr,
     /// target_claim amount of claimed accounts to start release (activate gift)
     pub target_claim: Uint64,
     pub allowed_native: String,
