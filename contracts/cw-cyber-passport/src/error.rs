@@ -41,6 +41,9 @@ pub enum ContractError {
     #[error("Wrong amount for the name")]
     WrongAmountForName {},
 
+    #[error("Name is not valid")]
+    NotValidName {},
+
     #[error("Nickname already exists")]
     NicknameAlreadyExists {},
 
@@ -54,6 +57,7 @@ pub enum ContractError {
     IsNotEligible { msg: String },
 
     // -----
+    // TODO check this overwrites of error messages
 
     #[error("Invalid hash format")]
     InvalidHashFormat,
