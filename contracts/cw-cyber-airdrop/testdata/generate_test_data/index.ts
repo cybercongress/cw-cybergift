@@ -1,12 +1,14 @@
+import {Command, flags} from '@oclif/command'
+import { readFileSync, writeFileSync } from 'fs';
 import CryptoJS from "crypto-js";
 import sha256 from "crypto-js/sha256";
 import { MerkleTree } from "merkletreejs";
-import receivers from "./airdrop_stage_1_list.json";
 
 interface Encoding {
-  target_address: string;
+  address: string;
   amount: string;
 }
+
 class Airdrop {
   private tree: MerkleTree;
 
@@ -17,7 +19,7 @@ class Airdrop {
 
   encode_data(data: Encoding): CryptoJS.lib.WordArray {
     return sha256(
-      data.target_address + data.amount
+      data.address + data.amount
     );
   }
 
@@ -40,10 +42,40 @@ class Airdrop {
   }
 }
 
-let airdrop = new Airdrop(receivers);
+class GenerateProofs extends Command {
+  static description = 'Generates merkle root and proofs for given addresses'
 
-console.log(airdrop.getMerkleRoot());
-console.log(receivers[0])
-console.log(airdrop.getMerkleProof(receivers[0]));
-console.log(receivers[1])
-console.log(airdrop.getMerkleProof(receivers[1]));
+  static examples = [
+    `$ generate-merkle-proofs --input root_testing_source.json --output proof.json`,
+  ]
+
+  static flags = {
+    input: flags.string({char: 'f', description: 'airdrop file location'}),
+    output: flags.string({char: 'o', description: 'output file location'}),
+  }
+
+  async run() {
+    const {flags} = this.parse(GenerateProofs)
+
+    if (!flags.input) {
+      this.error(new Error('Airdrop file location not defined'))
+    }
+
+    if (!flags.output) {
+      this.error(new Error('Output file location not defined'))
+    }
+
+    let file = readFileSync(flags.input, 'utf-8');
+    let receivers: Array<Encoding> = JSON.parse(file);
+    let airdrop = new Airdrop(receivers);
+
+    let result =
+      {"merkle_root": airdrop.getMerkleRoot(),
+       "proofs": receivers.map((r) => {return {"address": r.address, "amount": r.amount, "proof": airdrop.getMerkleProof(r)}})};
+    writeFileSync(flags.output, JSON.stringify(result));
+    console.log("merkle root: " + result.merkle_root)
+    console.log(`number of addresses: ${Object.keys(result.proofs).length}`)
+  }
+}
+// @ts-ignore
+GenerateProofs.run().catch(require('@oclif/core/handle'))
