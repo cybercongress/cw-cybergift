@@ -69,12 +69,14 @@ class GenerateProofs extends Command {
     let receivers: Array<Encoding> = JSON.parse(file);
     let airdrop = new Airdrop(receivers);
 
+    let merkle_root = airdrop.getMerkleRoot()
+    console.log("Merkle root: " + merkle_root)
+
     let result =
-      {"merkle_root": airdrop.getMerkleRoot(),
+      {"merkle_root": merkle_root,
        "proofs": receivers.map((r) => {return {"address": r.address, "amount": r.amount, "proof": airdrop.getMerkleProof(r)}})};
     writeFileSync(flags.output, JSON.stringify(result));
-    console.log("merkle root: " + result.merkle_root)
-    console.log(`number of addresses: ${Object.keys(result.proofs).length}`)
+    console.log(`Number of addresses in the Merkle tree: ${Object.keys(result.proofs).length}`)
   }
 }
 // @ts-ignore
