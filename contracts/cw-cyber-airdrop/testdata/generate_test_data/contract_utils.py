@@ -88,3 +88,18 @@ def get_ipfs_cid_from_str(source_str: str) -> str:
     _length = bytes([len(_source_hash_bytes)])
     _hash = b'\x12' + _length + _source_hash_bytes
     return base58.b58encode(_hash).decode('utf-8')
+
+
+def get_proofs(input_file: str,
+               output_file: str,
+               start_index: int = 1,
+               end_index: int = -1) -> bool:
+    _root_and_proofs_output, _root_and_proofs_error = execute_bash(
+        f'export NODE_OPTIONS=--max_old_space_size=4096 && '
+        f'yarn start --input {input_file} --output {output_file} --start_index {start_index} --end_index {end_index}')
+    if _root_and_proofs_output:
+        print(_root_and_proofs_output)
+        return True
+    else:
+        print(_root_and_proofs_error)
+        return False

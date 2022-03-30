@@ -46,12 +46,30 @@ class GenerateProofs extends Command {
   static description = 'Generates merkle root and proofs for given addresses'
 
   static examples = [
-    `$ generate-merkle-proofs --input root_testing_source.json --output proof.json`,
+    `$ generate-merkle-proofs --input root_testing_source.json --output proof.json --start_index 1 --end_index 100`,
   ]
 
   static flags = {
-    input: flags.string({char: 'f', description: 'airdrop file location'}),
-    output: flags.string({char: 'o', description: 'output file location'}),
+    input: flags.string({
+      char: 'f',
+      description: 'airdrop file location'
+    }),
+    output: flags.string({
+      char: 'o',
+      description: 'output file location'
+    }),
+    start_index: flags.integer({
+      char: 's',
+      description: 'start index in the airdrop file for getting proofs',
+      default: 1,
+      required: false
+    }),
+    end_index: flags.integer({
+      char: 'e',
+      description: 'end index in the airdrop file for getting proofs',
+      default: -1,
+      required: false
+    }),
   }
 
   async run() {
@@ -74,7 +92,8 @@ class GenerateProofs extends Command {
 
     let result =
       {"merkle_root": merkle_root,
-       "proofs": receivers.map((r) => {return {"address": r.address, "amount": r.amount, "proof": airdrop.getMerkleProof(r)}})};
+       "proofs": receivers.slice(flags.start_index, flags.end_index).map(
+         (r) => {return {"address": r.address, "amount": r.amount, "proof": airdrop.getMerkleProof(r)}})};
     writeFileSync(flags.output, JSON.stringify(result));
     console.log(`Number of addresses in the Merkle tree: ${Object.keys(result.proofs).length}`)
   }
