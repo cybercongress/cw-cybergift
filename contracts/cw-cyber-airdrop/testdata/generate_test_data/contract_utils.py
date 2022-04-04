@@ -26,10 +26,10 @@ def execute_bash(bash_command: str, display_data: bool = False) -> [str, str]:
 def instantiate_contract(init_query: str, contract_code_id: str, contract_label: str, amount: str = '',
                          display_data: bool = False) -> str:
     _init_output, _init_error = execute_bash(
-      f'''INIT='{init_query}' \
-              && cyber tx wasm instantiate {contract_code_id} "$INIT" --from $WALLET
-              {'--amount ' + amount + 'boot' if amount else ''} --label "{contract_label}" \
-              -y --gas 3500000 --broadcast-mode block -o json --chain-id={NETWORK} --node={NODE_URL}''')
+        f'''INIT='{init_query}' \
+            && cyber tx wasm instantiate {contract_code_id} "$INIT" --from $WALLET \
+            {'--amount ' + amount + 'boot' if amount else ''} --label "{contract_label}" \
+            -y --gas 3500000 --broadcast-mode block -o json --chain-id={NETWORK} --node={NODE_URL}''')
     if display_data:
         try:
             print(json.dumps(json.loads(_init_output.decode('utf-8')), indent=4, sort_keys=True))
@@ -46,10 +46,10 @@ def instantiate_contract(init_query: str, contract_code_id: str, contract_label:
 def execute_contract(execute_query: str, contract_address: str, from_address: str = '$WALLET', gas: int = 300000,
                      display_data: bool = False) -> str:
     _execute_output, _execute_error = execute_bash(
-      f'''EXECUTE='{execute_query}' \
-              && CONTRACT="{contract_address}" \
-              && cyber tx wasm execute $CONTRACT "$EXECUTE" --from {from_address} --broadcast-mode block -o json -y
-              --gas={gas} --chain-id={NETWORK} --node={NODE_URL}''')
+        f'''EXECUTE='{execute_query}' \
+            && CONTRACT="{contract_address}" \
+            && cyber tx wasm execute $CONTRACT "$EXECUTE" --from {from_address} --broadcast-mode block -o json -y \
+            --gas={gas} --chain-id={NETWORK} --node={NODE_URL}''')
     if display_data:
         try:
             print(json.dumps(json.loads(_execute_output), indent=4, sort_keys=True))
@@ -63,8 +63,8 @@ def execute_contract(execute_query: str, contract_address: str, from_address: st
 def query_contract(query: str, contract_address: str, display_data: bool = False) -> json:
     _execute_output, _execute_error = execute_bash(
         f'''QUERY='{query}' \
-                && cyber query wasm contract-state smart {contract_address} "$QUERY" -o json
-                --chain-id={NETWORK} --node={NODE_URL}''')
+            && cyber query wasm contract-state smart {contract_address} "$QUERY" -o json \
+            --chain-id={NETWORK} --node={NODE_URL}''')
     try:
         if display_data:
             print(json.dumps(json.loads(_execute_output), indent=4, sort_keys=True))
