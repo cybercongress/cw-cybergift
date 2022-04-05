@@ -3,8 +3,46 @@ import base58
 import hashlib
 from subprocess import Popen, PIPE
 
+from cyber_sdk.client.lcd import LCDClient
+from cyber_sdk.client.lcd.api.tx import CreateTxOptions
+from cyber_sdk.core import AccAddress, Coins
+from cyber_sdk.core.wasm import MsgExecuteContract
+from cyber_sdk.key.mnemonic import MnemonicKey
+from cyber_sdk.core.bank import MsgMultiSend
+from cyber_sdk.core.bank.msgs import MultiSendInput, MultiSendOutput
+
 NODE_URL = 'https://rpc.space-pussy-1.cybernode.ai:443'
+LCD_URL = 'https://lcd.space-pussy-1.cybernode.ai/'
 NETWORK = 'space-pussy-1'
+
+
+bostrom_lcd_client = LCDClient(
+    url=LCD_URL,
+    chain_id=NETWORK
+)
+
+
+def execute_contract_sdk(execute_msg: json, contract_address: str, mnemonic: str,
+                         gas: int = 500000, gas_price: int = 0, display_data: bool = False) -> str:
+    _key = MnemonicKey(mnemonic=mnemonic)
+    _wallet = bostrom_lcd_client.wallet(key=_key)
+
+    _msg = MsgExecuteContract(
+        sender=_wallet.key.acc_address,
+        contract=AccAddress(contract_address),
+        execute_msg=execute_msg)
+
+    _tx = _wallet.create_and_sign_tx(
+        CreateTxOptions(
+            msgs=[_msg],
+            gas_prices=str(gas_price)+'boot',
+            gas=str(gas)
+        )
+    )
+    if display_data:
+        print(_msg)
+        print(_tx)
+    return bostrom_lcd_client.tx.broadcast(_tx).to_json()
 
 
 def execute_bash(bash_command: str, display_data: bool = False) -> [str, str]:
@@ -103,3 +141,126 @@ def get_proofs(input_file: str,
     else:
         print(_root_and_proofs_error)
         return False
+
+
+def send_coins(from_seed: str, to_addresses: list, amounts: list, gas: int = 70999, denom: str = 'boot',
+               display_data: bool = False) -> str:
+    _mk = MnemonicKey(mnemonic=from_seed)
+    _wallet = bostrom_lcd_client.wallet(key=_mk)
+
+    _msg = MsgMultiSend(
+        inputs=[
+            MultiSendInput(address=_wallet.key.acc_address, coins=Coins(boot=_amount))
+            for _amount in amounts
+        ],
+        outputs=[
+            MultiSendOutput(address=_to_address, coins=Coins(boot=_amount))
+            for _to_address, _amount in zip(to_addresses, amounts)
+        ],
+    )
+
+    _tx = _wallet.create_and_sign_tx(
+        CreateTxOptions(
+            msgs=[_msg],
+            gas_prices="0boot",
+            gas=str(gas),
+            fee_denoms=["boot"],
+        )
+    )
+    if display_data:
+        print(_msg)
+        print('\n', _tx)
+    return bostrom_lcd_client.tx.broadcast(_tx).to_json()
+
+
+class ParseOutput:
+
+    def __init__(self, ipfs_client, address_dict):
+        self.ipfs_client = ipfs_client
+        self.address_dict = address_dict
+
+    def get_contract_name(self, contract_address: str) -> str:
+        try:
+            return self.address_dict[contract_address]
+        except KeyError:
+            return contract_address
+
+    def get_name_from_cid(self, ipfs_hash: str, row=None) -> str:
+        if row is None:
+            return ipfs_hash
+        cid_name_dict = {
+            row['avatar']: 'Avatar',
+            self.ipfs_client.add_str(row['nickname']): 'Nickname',
+            self.ipfs_client.add_str(row['ethereum_address']): 'Ethereum Address',
+            self.ipfs_client.add_str(row['cosmos_address']): 'Cosmos Address',
+            self.ipfs_client.add_str(row['bostrom_address']): 'Passport Owner Address',
+            self.ipfs_client.add_str('cyberhole'): 'cyberhole'}
+        try:
+            return cid_name_dict[ipfs_hash]
+        except KeyError:
+            return ipfs_hash
+
+    def parse_contract_execution_json(self, contract_execution_json: str, row=None) -> None:
+        print('\nEvents')
+        _contract_execution_json = json.loads(contract_execution_json)
+        _logs = _contract_execution_json['logs']
+        if _logs is None or len(_logs) == 0:
+            print(_contract_execution_json['raw_log'])
+        else:
+            for log_item in _logs:
+                for event_item in log_item['events']:
+                    print('')
+                    if event_item['type'] == 'message':
+                        if len(event_item["attributes"]) == 3:
+                            print(
+                                f'message from {self.get_contract_name(event_item["attributes"][-1]["value"])} '
+                                f'{event_item["attributes"][1]["value"]} {event_item["attributes"][0]["value"]}')
+                        else:
+                            print(event_item)
+                    elif event_item['type'] == 'execute':
+                        print('execute')
+                        for attr_item in event_item["attributes"]:
+                            if attr_item["key"] == '_contract_address':
+                                print(f'\texecute contract: {self.get_contract_name(attr_item["value"])}')
+                            else:
+                                print(f'\t{attr_item["key"]}: {self.get_contract_name(attr_item["value"])}')
+                    elif event_item['type'] == 'reply':
+                        print('reply')
+                        for attr_item in event_item["attributes"]:
+                            if attr_item["key"] == '_contract_address':
+                                print(f'\treply contract: {self.get_contract_name(attr_item["value"])}')
+                            else:
+                                print(f'\t{attr_item["key"]}: {self.get_contract_name(attr_item["value"])}')
+                    elif event_item['type'] == 'cyberlink':
+                        print('cyberlinks')
+                        for i, attr_item in enumerate(event_item['attributes']):
+                            if attr_item['key'] == 'particleFrom':
+                                print(
+                                    f'\t{self.get_name_from_cid(attr_item["value"], row=row)} -> '
+                                    f'{self.get_name_from_cid(event_item["attributes"][i + 1]["value"], row=row)}')
+                            elif attr_item['key'] == 'particleTo':
+                                pass
+                            elif attr_item['key'] == 'neuron':
+                                print(f'\tneuron: {self.get_contract_name(attr_item["value"])}\n')
+                            else:
+                                print(f'\t{attr_item["key"]}: {self.get_contract_name(attr_item["value"])}')
+                    elif event_item['type'] == 'coin_received':
+                        print('coin received')
+                        for attr_item in event_item["attributes"]:
+                            print(f'\t{attr_item["key"]}: {self.get_contract_name(attr_item["value"])}')
+                    elif event_item['type'] == 'coin_spent':
+                        print('coin spent')
+                        for attr_item in event_item["attributes"]:
+                            print(f'\t{attr_item["key"]}: {self.get_contract_name(attr_item["value"])}')
+                    elif event_item['type'] == 'wasm':
+                        print('wasm')
+                        for attr_item in event_item["attributes"]:
+                            print(f'\t{attr_item["key"]}: {self.get_contract_name(attr_item["value"])}')
+                    elif event_item['type'] == 'transfer':
+                        print('transfer')
+                        for attr_item in event_item["attributes"]:
+                            print(f'\t{attr_item["key"]}: {self.get_contract_name(attr_item["value"])}')
+                    else:
+                        print(event_item)
+        print(f"Gas used: {int(_contract_execution_json['gas_used']):>,}")
+        print(f"Tx hash: {_contract_execution_json['txhash']}")
