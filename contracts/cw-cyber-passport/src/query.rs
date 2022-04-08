@@ -62,7 +62,7 @@ pub fn query_passort_signed(
         .load(deps.storage, address_portid.portid.as_str())?;
     let mut result = false;
     if token_info.clone().extension.addresses.is_some() {
-        result = token_info.clone().extension.addresses.unwrap().iter().any(|i| i.as_ref() == address);
+        result = token_info.clone().extension.addresses.unwrap().iter().any(|i| i.address == address);
     }
     Ok(SignatureResponse { signed:  result })
 }

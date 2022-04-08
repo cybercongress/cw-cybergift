@@ -1,5 +1,5 @@
 use cosmwasm_std::{Deps, StdResult};
-use crate::msg::{ConfigResponse, IsClaimedResponse, MerkleRootResponse, ReleaseStateResponse};
+use crate::msg::{ClaimResponse, ConfigResponse, IsClaimedResponse, MerkleRootResponse, ReleaseStateResponse};
 use crate::state::{CLAIM, CONFIG, MERKLE_ROOT, RELEASE};
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
@@ -27,8 +27,23 @@ pub fn query_merkle_root(deps: Deps) -> StdResult<MerkleRootResponse> {
 }
 
 pub fn query_is_claimed(deps: Deps, address: String) -> StdResult<IsClaimedResponse> {
-    let is_claimed = CLAIM.may_load(deps.storage, address)?.unwrap_or(false);
+    let claim = CLAIM.may_load(deps.storage, address)?;
+    let mut is_claimed = false;
+    if claim.is_some() {
+        is_claimed = true;
+    }
     let resp = IsClaimedResponse { is_claimed };
+
+    Ok(resp)
+}
+
+pub fn query_claim(deps: Deps, address: String) -> StdResult<ClaimResponse> {
+    let claim = CLAIM.load(deps.storage, address)?;
+
+    let resp = ClaimResponse {
+        claim: claim.claim,
+        multiplier: claim.multiplier
+    };
 
     Ok(resp)
 }

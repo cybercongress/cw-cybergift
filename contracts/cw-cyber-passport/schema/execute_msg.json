@@ -215,6 +215,36 @@
       "additionalProperties": false
     },
     {
+      "type": "object",
+      "required": [
+        "set_address_label"
+      ],
+      "properties": {
+        "set_address_label": {
+          "type": "object",
+          "required": [
+            "address",
+            "nickname"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            },
+            "label": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "nickname": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Transfer is a base message to move a token to another account without triggering actions",
       "type": "object",
       "required": [
@@ -466,6 +496,23 @@
         }
       ]
     },
+    "LabeledAddress": {
+      "type": "object",
+      "required": [
+        "address"
+      ],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "MintMsg_for_PassportMetadata": {
       "type": "object",
       "required": [
@@ -512,7 +559,7 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/LabeledAddress"
           }
         },
         "avatar": {

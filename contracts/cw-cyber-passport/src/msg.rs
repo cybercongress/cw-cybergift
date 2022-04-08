@@ -76,6 +76,11 @@ pub enum ExecuteMsg {
         avatar_subspace: String,
         proof_subspace: String,
     },
+    SetAddressLabel {
+        nickname: String,
+        address: String,
+        label: Option<String>,
+    },
 
     // Overwrite Standard CW721 ExecuteMsg
 

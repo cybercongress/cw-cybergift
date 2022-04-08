@@ -13,7 +13,7 @@ use cyber_std::{CyberMsgWrapper, Link};
 
 use crate::error::ContractError;
 use crate::helpers::{proof_address_cosmos, proof_address_ethereum, decode_address, prepare_cyberlink_submsg};
-use crate::state::{ACTIVE, AddressPortID, Extension, NICKNAMES, PassportContract, PassportMetadata, PORTID};
+use crate::state::{ACTIVE, AddressPortID, Extension, LabeledAddress, NICKNAMES, PassportContract, PassportMetadata, PORTID};
 use crate::state::{Config, CONFIG};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
@@ -344,15 +344,15 @@ pub fn execute_proof_address(
                     msg: "Too many addresses".to_string(),
                 });
             }
-            if addresses.iter().position(|x| *x == address.clone()).is_some() {
+            if addresses.iter().position(|x| *x.address == address.clone()).is_some() {
                 return Err(ContractError::IsNotEligible {
                     msg: "Address already exist".to_string(),
                 });
             }
-            addresses.push(address.clone());
+            addresses.push(LabeledAddress { label: None, address: address.clone() });
             token_info.extension.addresses = Some(addresses);
         } else {
-            token_info.extension.addresses = Some(vec![address.clone()]);
+            token_info.extension.addresses = Some(vec![LabeledAddress { label: None, address: address.clone() }]);
         };
         cw721_contract.tokens.save(deps.storage, &address_portid.clone().portid, &token_info)?;
     } else {
@@ -414,8 +414,11 @@ pub fn execute_remove_address(
         .update(deps.storage, &address_portid.clone().portid, |token| match token {
             Some(mut token_info) => {
                 let mut addresses = token_info.clone().extension.addresses.unwrap();
-                let index = addresses.iter().position(|x| *x == address.clone()).unwrap();
-                addresses.remove(index);
+                let index = addresses.iter().position(|x| *x.address == address.clone());
+                if index.is_none() {
+                    return Err(ContractError::AddressNotFound {})
+                }
+                addresses.remove(index.unwrap());
                 if addresses.len() == 0 {
                     token_info.extension.addresses = None;
                 } else {
@@ -761,6 +764,51 @@ pub fn execute_set_subspaces(
         attr("name_subspace", name_subspace.to_string()),
         attr("avatar_subspace", avatar_subspace.to_string()),
         attr("proof_subspace", proof_subspace.to_string()),
+    ]))
+}
+
+pub fn execute_set_address_label(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    nickname: String,
+    address: String,
+    label: Option<String>,
+) -> Result<Response, ContractError> {
+
+    if !NICKNAMES.has(deps.storage, &nickname.clone()) {
+        return Err(ContractError::NicknameNotFound {});
+    };
+
+    let cw721_contract = PassportContract::default();
+    let address_portid = NICKNAMES.load(deps.storage, &nickname.clone())?;
+    let nft_owner = cw721_contract.owner_of(deps.as_ref(), env, address_portid.clone().portid, false)?;
+    if nft_owner.owner != info.clone().sender {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    // find needed address and save label
+    cw721_contract
+        .tokens
+        .update(deps.storage, &address_portid.clone().portid, |token| match token {
+            Some(mut token_info) => {
+                let mut addresses = token_info.clone().extension.addresses.unwrap();
+                let index = addresses.iter().position(|x| *x.address == address.clone());
+                if index.is_none() {
+                    return Err(ContractError::AddressNotFound {});
+                }
+                addresses[index.unwrap()].label = label.clone();
+                token_info.extension.addresses = Some(addresses);
+                Ok(token_info)
+            }
+            None => return Err(ContractError::TokenNotFound {}),
+        })?;
+
+    Ok(Response::new().add_attributes(vec![
+        attr("action", "set_address_label"),
+        attr("nickname", nickname),
+        attr("address", address),
+        attr("label", label.unwrap_or_else(|| "".to_string())),
     ]))
 }
 

@@ -34,6 +34,12 @@ pub struct ReleaseState {
     pub stage_expiration: Expiration,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ClaimState {
+    pub claim: Uint128,
+    pub multiplier: Decimal,
+}
+
 pub const CONFIG_KEY: &str = "config";
 pub const CONFIG: Item<Config> = Item::new(CONFIG_KEY);
 
@@ -41,7 +47,7 @@ pub const MERKLE_ROOT_PREFIX: &str = "merkle_root";
 pub const MERKLE_ROOT: Item<String> = Item::new(MERKLE_ROOT_PREFIX);
 
 pub const CLAIM_PREFIX: &str = "claim";
-pub const CLAIM: Map<String, bool> = Map::new(CLAIM_PREFIX);
+pub const CLAIM: Map<String, ClaimState> = Map::new(CLAIM_PREFIX);
 
 pub const RELEASE_PREFIX: &str = "release";
 pub const RELEASE: Map<String, ReleaseState> = Map::new(RELEASE_PREFIX);
