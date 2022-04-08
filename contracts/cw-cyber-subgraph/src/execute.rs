@@ -1,4 +1,4 @@
-use cosmwasm_std::{attr, DepsMut, Env, MessageInfo, StdResult};
+use cosmwasm_std::{attr, DepsMut, Env, MessageInfo, StdResult, SubMsg};
 
 use crate::error::ContractError;
 use crate::state::CONFIG;
@@ -6,6 +6,7 @@ use cyber_std::{create_cyberlink_msg, Link, CyberMsgWrapper};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
+pub const CYBERLINK_ID_MSG: u64 = 42;
 
 pub fn execute_update_owner(
     deps: DepsMut,
@@ -59,6 +60,6 @@ pub fn execute_cyberlink(
     }
 
     let msg = create_cyberlink_msg(env.contract.address.to_string(), cyberlink);
-    Ok(Response::new().add_message(msg))
+    Ok(Response::new().add_submessage(SubMsg::reply_on_error(msg, CYBERLINK_ID_MSG)))
 }
 

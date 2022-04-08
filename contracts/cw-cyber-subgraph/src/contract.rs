@@ -1,12 +1,12 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, StdResult, MessageInfo};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, StdResult, MessageInfo, Reply};
 use cw2::{get_contract_version, set_contract_version};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG};
-use crate::execute::{execute_cyberlink, execute_update_executer, execute_update_owner};
+use crate::execute::{CYBERLINK_ID_MSG, execute_cyberlink, execute_update_executer, execute_update_owner};
 use crate::query::query_config;
 
 use cyber_std::CyberMsgWrapper;
@@ -54,6 +54,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
     }
 }
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(_deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
+    if reply.id != CYBERLINK_ID_MSG {
+        return Err(ContractError::UnknownReplyId { id: reply.id });
+    }
+    Ok(Response::new())
+}
+
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
