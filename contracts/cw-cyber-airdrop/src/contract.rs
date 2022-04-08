@@ -7,7 +7,7 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG};
 use crate::execute::{execute_claim, execute_register_merkle_root, execute_release, execute_update_owner, execute_update_passport, execute_update_target};
-use crate::query::{query_config, query_is_claimed, query_merkle_root, query_release_state};
+use crate::query::{query_claim, query_config, query_is_claimed, query_merkle_root, query_release_state};
 use cw1_subkeys::msg::{ExecuteMsg as Cw1ExecuteMsg};
 
 // Version info, for migration info
@@ -90,6 +90,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::MerkleRoot {} => to_binary(&query_merkle_root(deps)?),
         QueryMsg::IsClaimed { address } => to_binary(&query_is_claimed(deps, address)?),
+        QueryMsg::Claim { address } => to_binary(&query_claim(deps, address)?),
         QueryMsg::ReleaseState { address } => to_binary(&query_release_state(deps, address)?),
     }
 }

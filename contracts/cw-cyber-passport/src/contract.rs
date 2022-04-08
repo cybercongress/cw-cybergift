@@ -4,7 +4,7 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Reply, StdResult, to
 use cyber_std::CyberMsgWrapper;
 
 use crate::error::ContractError;
-use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_set_subspaces, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate, CYBERLINK_ID_MSG};
+use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_set_subspaces, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate, CYBERLINK_ID_MSG, execute_set_address_label};
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{query_active_passport, query_address_by_nickname, query_config, query_metadata_by_nickname, query_passort_signed, query_passport_by_nickname, query_portid};
 use crate::state::{Config, CONFIG, PassportContract, PORTID};
@@ -52,6 +52,11 @@ pub fn execute(
             avatar_subspace,
             proof_subspace
         } => execute_set_subspaces(deps, env, info, name_subspace, avatar_subspace, proof_subspace),
+        ExecuteMsg::SetAddressLabel {
+            nickname,
+            address,
+            label
+        } => execute_set_address_label(deps, env, info, nickname, address, label),
         // Overwrite CW721 methods
         ExecuteMsg::TransferNft { recipient, token_id} => execute_transfer_nft(deps, env, info, recipient, token_id),
         ExecuteMsg::SendNft { contract, token_id, msg} => execute_send_nft(deps, env, info, contract, token_id, msg),

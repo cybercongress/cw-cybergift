@@ -2,7 +2,7 @@ use cosmwasm_std::{Addr, attr, BankMsg, Coin, Decimal, DepsMut, Env, MessageInfo
 
 use crate::error::ContractError;
 use crate::helpers::{update_coefficient, verify_merkle_proof};
-use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE};
+use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE, ClaimState};
 use cw_utils::{Expiration, DAY, HOUR};
 use std::ops::{Add, Mul};
 use cw_cyber_passport::msg::{QueryMsg as PassportQueryMsg};
@@ -158,7 +158,7 @@ pub fn execute_claim(
     )?;
 
     // only claim once by given verified address
-    CLAIM.save(deps.storage, gift_claiming_address.clone(), &true)?;
+    CLAIM.save(deps.storage, gift_claiming_address.clone(), &ClaimState{ claim: claim_amount, multiplier: config.coefficient })?;
 
     update_coefficient(deps.storage, claim_amount, &mut config)?;
 
@@ -190,17 +190,24 @@ pub fn execute_claim(
 
     // send funds from treasury controlled by Congress
     Ok(Response::new()
-       .add_message(WasmMsg::Execute {
-           contract_addr: config.treasury_addr.to_string(),
-           msg: to_binary(&BankMsg::Send {
-               to_address: res.address.clone(),
-               amount: vec![Coin {
-                   denom: config.allowed_native,
-                   amount: Uint128::new(CLAIM_BOUNTY),
-               }],
-           })?,
-           funds: vec![]
-       })
+       // .add_message(WasmMsg::Execute {
+       //     contract_addr: config.treasury_addr.to_string(),
+       //     msg: to_binary(&BankMsg::Send {
+       //         to_address: res.address.clone(),
+       //         amount: vec![Coin {
+       //             denom: config.allowed_native,
+       //             amount: Uint128::new(CLAIM_BOUNTY),
+       //         }],
+       //     })?,
+       //     funds: vec![]
+       // })
+        .add_message(BankMsg::Send {
+            to_address: res.address.clone(),
+            amount: vec![Coin {
+                denom: config.allowed_native,
+                amount: Uint128::new(CLAIM_BOUNTY),
+            }],
+        })
        .add_attributes(vec![
            attr("action", "claim"),
            attr("original", gift_claiming_address),
@@ -278,17 +285,24 @@ pub fn execute_release(
 
     // send funds from treasury controlled by Congress
     Ok(Response::new()
-       .add_message(WasmMsg::Execute {
-           contract_addr: config.treasury_addr.to_string(),
-           msg: to_binary(&BankMsg::Send {
-               to_address: release_state.clone().address.into(),
-               amount: vec![Coin {
-                   denom: config.allowed_native,
-                   amount
-               }],
-           })?,
-           funds: vec![]
-       })
+       // .add_message(WasmMsg::Execute {
+       //     contract_addr: config.treasury_addr.to_string(),
+       //     msg: to_binary(&BankMsg::Send {
+       //         to_address: release_state.clone().address.into(),
+       //         amount: vec![Coin {
+       //             denom: config.allowed_native,
+       //             amount
+       //         }],
+       //     })?,
+       //     funds: vec![]
+       // })
+        .add_message(BankMsg::Send {
+            to_address: release_state.clone().address.into(),
+            amount: vec![Coin {
+                denom: config.allowed_native,
+                amount
+            }],
+        })
        .add_attributes(vec![
            attr("action", "release"),
            attr("address", release_state.clone().address.to_string()),

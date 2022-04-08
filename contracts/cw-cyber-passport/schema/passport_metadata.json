@@ -13,7 +13,7 @@
         "null"
       ],
       "items": {
-        "type": "string"
+        "$ref": "#/definitions/LabeledAddress"
       }
     },
     "avatar": {
@@ -21,6 +21,25 @@
     },
     "nickname": {
       "type": "string"
+    }
+  },
+  "definitions": {
+    "LabeledAddress": {
+      "type": "object",
+      "required": [
+        "address"
+      ],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   }
 }

@@ -22,6 +22,9 @@ pub enum ContractError {
     #[error("Approval not found for: {spender}")]
     ApprovalNotFound { spender: String },
 
+    #[error("Address not found")]
+    AddressNotFound {},
+
     // -----
 
     #[error("Got a submessage reply with unknown id: {id}")]

@@ -54,6 +54,7 @@ pub enum QueryMsg {
     Config {},
     MerkleRoot {},
     IsClaimed { address: String },
+    Claim { address: String },
     ReleaseState { address: String },
 }
 
@@ -82,6 +83,12 @@ pub struct MerkleRootResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct IsClaimedResponse {
     pub is_claimed: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ClaimResponse {
+    pub claim: Uint128,
+    pub multiplier: Decimal
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
