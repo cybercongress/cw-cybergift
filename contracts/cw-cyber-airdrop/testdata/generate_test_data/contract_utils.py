@@ -1,6 +1,7 @@
 import json
 import base58
 import hashlib
+import pandas as pd
 from subprocess import Popen, PIPE
 
 from cyber_sdk.client.lcd import LCDClient
@@ -14,35 +15,6 @@ from cyber_sdk.core.bank.msgs import MultiSendInput, MultiSendOutput
 NODE_URL = 'https://rpc.space-pussy-1.cybernode.ai:443'
 LCD_URL = 'https://lcd.space-pussy-1.cybernode.ai/'
 NETWORK = 'space-pussy-1'
-
-
-bostrom_lcd_client = LCDClient(
-    url=LCD_URL,
-    chain_id=NETWORK
-)
-
-
-def execute_contract_sdk(execute_msg: json, contract_address: str, mnemonic: str,
-                         gas: int = 500000, gas_price: int = 0, display_data: bool = False) -> str:
-    _key = MnemonicKey(mnemonic=mnemonic)
-    _wallet = bostrom_lcd_client.wallet(key=_key)
-
-    _msg = MsgExecuteContract(
-        sender=_wallet.key.acc_address,
-        contract=AccAddress(contract_address),
-        execute_msg=execute_msg)
-
-    _tx = _wallet.create_and_sign_tx(
-        CreateTxOptions(
-            msgs=[_msg],
-            gas_prices=str(gas_price)+'boot',
-            gas=str(gas)
-        )
-    )
-    if display_data:
-        print(_msg)
-        print(_tx)
-    return bostrom_lcd_client.tx.broadcast(_tx).to_json()
 
 
 def execute_bash(bash_command: str, display_data: bool = False) -> [str, str]:
@@ -81,8 +53,8 @@ def instantiate_contract(init_query: str, contract_code_id: str, contract_label:
             if event['type'] == 'instantiate'][0]
 
 
-def execute_contract(execute_query: str, contract_address: str, from_address: str = '$WALLET', gas: int = 300000,
-                     display_data: bool = False) -> str:
+def execute_contract_bash(execute_query: str, contract_address: str, from_address: str = '$WALLET', gas: int = 300000,
+                          display_data: bool = False) -> str:
     _execute_output, _execute_error = execute_bash(
         f'''EXECUTE='{execute_query}' \
             && CONTRACT="{contract_address}" \
@@ -143,41 +115,132 @@ def get_proofs(input_file: str,
         return False
 
 
-def send_coins(from_seed: str, to_addresses: list, amounts: list, gas: int = 70999, denom: str = 'boot',
-               display_data: bool = False) -> str:
-    _mk = MnemonicKey(mnemonic=from_seed)
-    _wallet = bostrom_lcd_client.wallet(key=_mk)
+class ContractUtils:
 
-    _msg = MsgMultiSend(
-        inputs=[
-            MultiSendInput(address=_wallet.key.acc_address, coins=Coins(boot=_amount))
-            for _amount in amounts
-        ],
-        outputs=[
-            MultiSendOutput(address=_to_address, coins=Coins(boot=_amount))
-            for _to_address, _amount in zip(to_addresses, amounts)
-        ],
-    )
-
-    _tx = _wallet.create_and_sign_tx(
-        CreateTxOptions(
-            msgs=[_msg],
-            gas_prices="0boot",
-            gas=str(gas),
-            fee_denoms=["boot"],
-        )
-    )
-    if display_data:
-        print(_msg)
-        print('\n', _tx)
-    return bostrom_lcd_client.tx.broadcast(_tx).to_json()
-
-
-class ParseOutput:
-
-    def __init__(self, ipfs_client, address_dict):
+    def __init__(self, ipfs_client, address_dict: dict, url: str = LCD_URL, chain_id: str = NETWORK):
         self.ipfs_client = ipfs_client
         self.address_dict = address_dict
+        self.name_dict = {v: k for k, v in address_dict.items()}
+        self.bostrom_lcd_client = LCDClient(
+            url=url,
+            chain_id=chain_id
+        )
+
+    def set_address_dict(self, address_dict):
+        self.address_dict = address_dict
+        self.name_dict = {v: k for k, v in address_dict.items()}
+
+    def send_coins(self, from_seed: str, to_addresses: list, amounts: list, gas: int = 70999, denom: str = 'boot',
+                   display_data: bool = False) -> str:
+        _mk = MnemonicKey(mnemonic=from_seed)
+        _wallet = self.bostrom_lcd_client.wallet(key=_mk)
+
+        _msg = MsgMultiSend(
+            inputs=[
+                MultiSendInput(address=_wallet.key.acc_address, coins=Coins(boot=_amount))
+                for _amount in amounts
+            ],
+            outputs=[
+                MultiSendOutput(address=_to_address, coins=Coins(boot=_amount))
+                for _to_address, _amount in zip(to_addresses, amounts)
+            ],
+        )
+
+        _tx = _wallet.create_and_sign_tx(
+            CreateTxOptions(
+                msgs=[_msg],
+                gas_prices="0boot",
+                gas=str(gas),
+                fee_denoms=["boot"],
+            )
+        )
+        if display_data:
+            print(_msg)
+            print('\n', _tx)
+        return self.bostrom_lcd_client.tx.broadcast(_tx).to_json()
+
+    # def query_contract(self, query_msg: dict, contract_address: str) -> json:
+    #     return self.bostrom_lcd_client.wasm.contract_query(contract_address=contract_address, query_msg=query_msg)
+
+    def execute_contract(self, execute_msg: json, contract_address: str, mnemonic: str,
+                         gas: int = 500000, gas_price: int = 0, display_data: bool = False) -> str:
+        _key = MnemonicKey(mnemonic=mnemonic)
+        _wallet = self.bostrom_lcd_client.wallet(key=_key)
+
+        _msg = MsgExecuteContract(
+            sender=_wallet.key.acc_address,
+            contract=AccAddress(contract_address),
+            execute_msg=execute_msg)
+
+        _tx = _wallet.create_and_sign_tx(
+            CreateTxOptions(
+                msgs=[_msg],
+                gas_prices=str(gas_price) + 'boot',
+                gas=str(gas)
+            )
+        )
+        if display_data:
+            print(_msg)
+            print(_tx)
+        return self.bostrom_lcd_client.tx.broadcast(_tx).to_json()
+
+    def create_passport(self, claim_row: pd.Series, display_data: bool = False):
+        return self.execute_contract(
+            execute_msg={"create_passport": {"avatar": claim_row["avatar"], "nickname": claim_row["nickname"]}},
+            contract_address=self.name_dict['Passport Contract'],
+            mnemonic=claim_row['cosmos_seed'],
+            gas=500000,
+            display_data=display_data)
+
+    def proof_address(self, claim_row: pd.Series, network: str = 'ethereum', display_data: bool = False):
+        return self.execute_contract(
+            execute_msg={
+                "proof_address": {"address": claim_row[network + "_address"], "nickname": claim_row["nickname"],
+                                  "signature": claim_row[network + "_message_signature"]}},
+            contract_address=self.name_dict['Passport Contract'],
+            mnemonic=claim_row['cosmos_seed'],
+            gas=400000,
+            display_data=display_data)
+
+    def claim(self, claim_row: pd.Series, network: str = 'ethereum', display_data: bool = False):
+        print({"claim": {"nickname": claim_row['nickname'],
+                         "gift_claiming_address": claim_row[network + "_address"],
+                         "gift_amount": str(claim_row['amount']),
+                         "proof": claim_row[network + "_proof"]}})
+        return self.execute_contract(
+            execute_msg={
+                "claim": {"nickname": claim_row['nickname'], "gift_claiming_address": claim_row[network + "_address"],
+                          "gift_amount": str(claim_row['amount']), "proof": claim_row[network + "_proof"]}},
+            contract_address=self.name_dict['Gift Contract'],
+            mnemonic=claim_row['cosmos_seed'],
+            gas=400000,
+            display_data=display_data)
+
+    def release(self, claim_row: pd.Series, network: str = 'ethereum', display_data: bool = False):
+        return self.execute_contract(
+            execute_msg={"release": {"gift_address": claim_row[network + "_address"]}},
+            contract_address=self.name_dict['Gift Contract'],
+            mnemonic=claim_row['cosmos_seed'],
+            gas=400000,
+            display_data=display_data)
+
+    def transfer_passport(self, claim_row: pd.Series, token_id: str, to_address: str = '', display_data: bool = False):
+        if to_address == '':
+            to_address = claim_row['bostrom_address']
+        return self.execute_contract(
+            execute_msg={"transfer_nft": {"recipient": to_address, "token_id": str(token_id)}},
+            contract_address=self.name_dict['Passport Contract'],
+            mnemonic=claim_row['cosmos_seed'],
+            gas=500000,
+            display_data=display_data)
+
+    def burn_passport(self, claim_row: pd.Series, token_id: str, display_data: bool = False):
+        return self.execute_contract(
+            execute_msg={"burn": {"token_id": token_id}},
+            contract_address=self.name_dict['Passport Contract'],
+            mnemonic=claim_row['cosmos_seed'],
+            gas=400000,
+            display_data=display_data)
 
     def get_contract_name(self, contract_address: str) -> str:
         try:
@@ -255,7 +318,10 @@ class ParseOutput:
                     elif event_item['type'] == 'wasm':
                         print('wasm')
                         for attr_item in event_item["attributes"]:
-                            print(f'\t{attr_item["key"]}: {self.get_contract_name(attr_item["value"])}')
+                            if attr_item["key"] == 'amount':
+                                print(f'\t{attr_item["key"]}: {int(attr_item["value"]):>,}')
+                            else:
+                                print(f'\t{attr_item["key"]}: {self.get_contract_name(attr_item["value"])}')
                     elif event_item['type'] == 'transfer':
                         print('transfer')
                         for attr_item in event_item["attributes"]:
