@@ -34,15 +34,15 @@ def execute_bash(bash_command: str, display_data: bool = False) -> [str, str]:
 
 
 def instantiate_contract(init_query: str, contract_code_id: str, contract_label: str, amount: str = '',
-                         display_data: bool = False) -> str:
+                         from_address: str = '$WALLET', display_data: bool = False) -> str:
     _init_output, _init_error = execute_bash(
         f'''INIT='{init_query}' \
-            && cyber tx wasm instantiate {contract_code_id} "$INIT" --from $WALLET \
+            && cyber tx wasm instantiate {contract_code_id} "$INIT" --from {from_address} \
             {'--amount ' + amount + 'boot' if amount else ''} --label "{contract_label}" \
             -y --gas 3500000 --broadcast-mode block -o json --chain-id={NETWORK} --node={NODE_URL}''')
     if display_data:
         try:
-            print(json.dumps(json.loads(_init_output.decode('utf-8')), indent=4, sort_keys=True))
+            print(json.dumps(json.loads(_init_output), indent=4, sort_keys=True))
         except json.JSONDecodeError:
             print(_init_output)
     if _init_error:
