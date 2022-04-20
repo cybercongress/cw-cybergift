@@ -55,19 +55,21 @@ if __name__ == '__main__':
     row['cosmos_proof'] = row['cosmos_proof'].replace('\'', '').replace('[', '').replace(']', '').split(', ')
 
     res = None
+    last_error = None
     i = 0
     while res is None and i < 5:
         try:
             res = participation(row=row, address_dict=address_dict, release_bool=release_bool)
         except (ClientConnectorError, LCDResponseError) as e:
             sleep(10)
-            print(f'Error: {e}')
+            print(f'Error: {e}\n')
+            last_error = e
             i += 1
     if res is not None:
         with open(log_file, 'w') as convert_file:
             convert_file.write(json.dumps(res))
         print(f"{row['bostrom_address']}: done")
-    else:
+    elif last_error is not None:
         with open(log_file, 'w') as convert_file:
-            convert_file.write(f'Error: {e}')
+            convert_file.write(f'Error: {last_error}')
         print(f"{row['bostrom_address']}: unsuccessful")
