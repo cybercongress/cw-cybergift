@@ -203,10 +203,6 @@ class ContractUtils:
             display_data=display_data)
 
     def claim(self, claim_row: pd.Series, network: str = 'ethereum', display_data: bool = False):
-        print({"claim": {"nickname": claim_row['nickname'],
-                         "gift_claiming_address": claim_row[network + "_address"],
-                         "gift_amount": str(claim_row['amount']),
-                         "proof": claim_row[network + "_proof"]}})
         return self.execute_contract(
             execute_msg={
                 "claim": {"nickname": claim_row['nickname'], "gift_claiming_address": claim_row[network + "_address"],

@@ -17,6 +17,7 @@ def participation(row: pd.Series, address_dict: dict, release_bool: bool = False
     contract_utils = ContractUtils(ipfs_client=None, address_dict=address_dict)
     if release_bool:
         _release_ethereum_json = contract_utils.release(row, display_data=DISPLAY_TX_EXECUTION)
+        sleep(1)
         _release_cosmos_json = contract_utils.release(row, network='cosmos', display_data=DISPLAY_TX_EXECUTION)
         return {
             'release_ethereum': _release_ethereum_json,
@@ -24,10 +25,14 @@ def participation(row: pd.Series, address_dict: dict, release_bool: bool = False
         }
     else:
         _create_passport_json = contract_utils.create_passport(row, display_data=DISPLAY_TX_EXECUTION)
+        sleep(1)
         _proof_ethereum_address_json = contract_utils.proof_address(row, display_data=DISPLAY_TX_EXECUTION)
+        sleep(1)
         _proof_cosmos_address_json = contract_utils.proof_address(row, network='cosmos',
                                                                   display_data=DISPLAY_TX_EXECUTION)
+        sleep(1)
         _claim_ethereum_json = contract_utils.claim(row, display_data=DISPLAY_TX_EXECUTION)
+        sleep(1)
         _claim_cosmos_json = contract_utils.claim(row, network='cosmos', display_data=DISPLAY_TX_EXECUTION)
         return {
             'create': _create_passport_json,
