@@ -1,6 +1,6 @@
-use cosmwasm_std::{Deps, StdResult};
-use crate::msg::{ClaimResponse, ConfigResponse, IsClaimedResponse, MerkleRootResponse, ReleaseStateResponse};
-use crate::state::{CLAIM, CONFIG, MERKLE_ROOT, RELEASE};
+use cosmwasm_std::{Deps, StdResult, Uint64};
+use crate::msg::{ClaimResponse, ConfigResponse, IsClaimedResponse, MerkleRootResponse, ReleaseStageStateResponse, ReleaseStateResponse, StateResponse};
+use crate::state::{CLAIM, CONFIG, MERKLE_ROOT, RELEASE, RELEASE_INFO, STATE};
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
@@ -9,13 +9,19 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         passport: cfg.passport_addr.to_string(),
         target_claim: cfg.target_claim,
         allowed_native: cfg.allowed_native,
-        current_balance: cfg.current_balance,
         initial_balance: cfg.initial_balance,
         coefficient_up: cfg.coefficient_up,
         coefficient_down: cfg.coefficient_down,
-        coefficient: cfg.coefficient,
-        claims: cfg.claims,
-        releases: cfg.releases,
+    })
+}
+
+pub fn query_state(deps: Deps) -> StdResult<StateResponse> {
+    let stt = STATE.load(deps.storage)?;
+    Ok(StateResponse {
+        current_balance: stt.current_balance,
+        coefficient: stt.coefficient,
+        claims: stt.claims,
+        releases: stt.releases
     })
 }
 
@@ -55,6 +61,14 @@ pub fn query_release_state(deps: Deps, address: String) -> StdResult<ReleaseStat
         balance_claim: release_state.balance_claim,
         stage: release_state.stage,
         stage_expiration: release_state.stage_expiration,
+    };
+    Ok(resp)
+}
+
+pub fn query_release_stage_state(deps: Deps, stage: Uint64) -> StdResult<ReleaseStageStateResponse> {
+    let release_stage_state = RELEASE_INFO.load(deps.storage, stage.u64())?;
+    let resp = ReleaseStageStateResponse {
+        releases: release_stage_state
     };
     Ok(resp)
 }

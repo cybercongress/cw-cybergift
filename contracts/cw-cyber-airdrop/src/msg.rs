@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use cosmwasm_std::{Decimal, Uint128, Uint64};
 use cw_utils::Expiration;
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     /// Owner if none set to info.sender.
     pub owner: Option<String>,
@@ -52,10 +52,12 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     Config {},
+    State {},
     MerkleRoot {},
     IsClaimed { address: String },
     Claim { address: String },
     ReleaseState { address: String },
+    ReleaseStageState { stage: Uint64 },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -65,10 +67,15 @@ pub struct ConfigResponse {
     pub passport: String,
     pub target_claim: Uint64,
     pub allowed_native: String,
-    pub current_balance: Uint128,
     pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct StateResponse {
+    pub current_balance: Uint128,
     pub coefficient: Decimal,
     pub claims: Uint64,
     pub releases: Uint64,
@@ -97,6 +104,11 @@ pub struct ReleaseStateResponse {
     pub balance_claim: Uint128,
     pub stage: Uint64,
     pub stage_expiration: Expiration,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ReleaseStageStateResponse {
+    pub releases: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

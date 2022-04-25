@@ -1,4 +1,4 @@
-use crate::state::{Config, CONFIG, MERKLE_ROOT};
+use crate::state::{Config, MERKLE_ROOT, State, STATE};
 use crate::ContractError;
 use cosmwasm_std::{
     Decimal, DepsMut, MessageInfo, StdError, StdResult, Storage,
@@ -11,12 +11,13 @@ use std::ops::{Add, Mul, Sub};
 pub fn update_coefficient(
     store: &mut dyn Storage,
     amount: Uint128,
-    config: &mut Config,
+    config: &Config,
+    state: &mut State,
 ) -> StdResult<()> {
     let coefficient_up = config.coefficient_up;
     let coefficient_down = config.coefficient_down;
     let initial_balance = config.initial_balance;
-    let current_balance = config.current_balance;
+    let current_balance = state.current_balance;
 
     // TODO delete after debug
     println!("{:?}", "update_coefficient");
@@ -37,9 +38,9 @@ pub fn update_coefficient(
     println!("{:?}", new_balance_ratio.to_string());
     println!("{:?}", new_coefficient.to_string());
 
-    config.coefficient = new_coefficient;
-    config.current_balance = current_balance - amount;
-    CONFIG.save(store, &config)
+    state.coefficient = new_coefficient;
+    state.current_balance = current_balance - amount;
+    STATE.save(store, &state)
 }
 
 pub fn verify_merkle_proof(
