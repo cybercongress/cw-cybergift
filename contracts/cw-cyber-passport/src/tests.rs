@@ -4,7 +4,7 @@ mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cw721_base::state::TokenInfo;
     use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, PortidResponse};
-    use crate::state::PassportMetadata;
+    use crate::state::{LabeledAddress, PassportMetadata};
     use crate::contract::{execute, instantiate};
     use crate::error::ContractError;
     use crate::query::{query_active_passport, query_config, query_metadata_by_nickname, query_passport_by_nickname, query_portid};
@@ -125,7 +125,8 @@ mod tests {
         let expected_passport_metadata = PassportMetadata {
             nickname: "test_nickname_new".to_string(),
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
-            addresses: Option::from(vec!["0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string()]),
+            // addresses: Option::from(vec!["0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string()]),
+            addresses: Option::from(vec![LabeledAddress{ label: None, address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string() }]),
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
 
@@ -138,13 +139,14 @@ mod tests {
 
         let info = mock_info(&citizen, &[]);
         execute(deps.as_mut(), mock_env(), info, proof_address_msg).unwrap();
-
         let expected_passport_metadata = PassportMetadata {
             nickname: "test_nickname_new".to_string(),
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
             addresses: Option::from(vec![
-                "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
-                "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string()
+                LabeledAddress{ label: None, address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string() },
+                LabeledAddress{ label: None, address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string() }
+                // "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
+                // "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string()
             ]),
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
@@ -188,7 +190,8 @@ mod tests {
         let expected_passport_metadata = PassportMetadata {
             nickname: "test_nickname_new".to_string(),
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
-            addresses: Option::from(vec!["bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string()]),
+            // addresses: Option::from(vec!["bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string()]),
+            addresses: Option::from(vec![LabeledAddress{ label: None, address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string() }]),
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
 
@@ -203,7 +206,8 @@ mod tests {
         let expected_passport_metadata = PassportMetadata {
             nickname: "test_nickname_new".to_string(),
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
-            addresses: Option::from(vec![]),
+            // addresses: Option::from(vec![]),
+            addresses: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
 
@@ -220,7 +224,8 @@ mod tests {
         let expected_passport_metadata = PassportMetadata {
             nickname: "name".to_string(),
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
-            addresses: Option::from(vec![]),
+            // addresses: Option::from(vec![]),
+            addresses: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "name".into()).unwrap(), expected_passport_metadata);
     }

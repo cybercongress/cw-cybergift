@@ -1,8 +1,4 @@
 use std::ops::{Add, Mul};
-use std::str::FromStr;
-
-use cid::{Cid, Version};
-use cid::multihash::{Code, MultihashDigest};
 use cosmwasm_std::{attr, Binary, DepsMut, Env, MessageInfo, Uint128};
 use cw2::{get_contract_version, set_contract_version};
 use cw721::{Cw721Execute, Cw721Query};
@@ -10,6 +6,7 @@ use cw721_base::MintMsg;
 use cw_utils::must_pay;
 
 use cyber_std::{CyberMsgWrapper, Link};
+use cyber_std::particle::{check_particle, prepare_particle};
 
 use crate::error::ContractError;
 use crate::helpers::{proof_address_cosmos, proof_address_ethereum, decode_address, prepare_cyberlink_submsg};
@@ -20,7 +17,7 @@ type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
 // TODO discuss and make this configurable in config
 const CONSTITUTION: &str = "QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV";
-pub const CYBERLINK_ID_MSG: u64 = 42;
+pub const CYBERSPACE_ID_MSG: u64 = 420;
 
 pub fn execute_create_passport(
     deps: DepsMut,
@@ -50,9 +47,9 @@ pub fn execute_create_passport(
         }
     }
 
-    let nick_particle = _prepare_particle(nickname.clone());
-    let avatar_particle = _check_particle(avatar.clone())?;
-    let address_particle = _prepare_particle(info.clone().sender.into());
+    let nick_particle = prepare_particle(nickname.clone())?;
+    let avatar_particle = check_particle(avatar.clone())?;
+    let address_particle = prepare_particle(info.clone().sender.into())?;
 
     let config = CONFIG.load(deps.storage)?;
 
@@ -129,34 +126,6 @@ pub fn execute_create_passport(
     )
 }
 
-// TODO move to cyber-std
-fn _prepare_particle(input: String) -> Cid {
-    // unixfs/dagnode/proto shortcut
-    let length: u8 = input.len() as u8;
-    let mut raw: Vec<u8> = vec![10, length.add(6) as u8, 8, 2, 18, length];
-    raw.append(&mut input.as_bytes().to_vec());
-    raw.append(&mut vec![24, length]);
-
-    let h = Code::Sha2_256.digest(&raw.as_slice());
-    let particle = Cid::new_v0(h).unwrap();
-    particle
-}
-
-// TODO move to cyber-std
-fn _check_particle(input: String) -> Result<Cid, ContractError> {
-    let particle:Cid;
-    let try_particle = Cid::from_str(&input.clone());
-    if try_particle.is_ok() {
-        particle = try_particle.unwrap();
-        if particle.version() != Version::V0 {
-            return Err(ContractError::InvalidParticleVersion {});
-        }
-    } else {
-        return Err(ContractError::InvalidParticle {});
-    }
-    Ok(particle)
-}
-
 pub fn execute_update_name(
     deps: DepsMut,
     env: Env,
@@ -214,8 +183,8 @@ pub fn execute_update_name(
         }
     )?;
 
-    let nick_particle = _prepare_particle(new_name.clone());
-    let address_particle = _prepare_particle(info.clone().sender.into());
+    let nick_particle = prepare_particle(new_name.clone())?;
+    let address_particle = prepare_particle(info.clone().sender.into())?;
 
     let config = CONFIG.load(deps.storage)?;
 
@@ -271,8 +240,8 @@ pub fn execute_update_avatar(
             None => return Err(ContractError::TokenNotFound {}),
         })?;
 
-    let avatar_particle = _check_particle(new_avatar.clone())?;
-    let address_particle = _prepare_particle(info.clone().sender.into());
+    let avatar_particle = check_particle(new_avatar.clone())?;
+    let address_particle = prepare_particle(info.clone().sender.into())?;
 
     let config = CONFIG.load(deps.storage)?;
 
@@ -305,9 +274,11 @@ pub fn execute_proof_address(
     env: Env,
     info: MessageInfo,
     nickname: String,
-    address: String,
+    mut address: String,
     signature: Binary
 ) -> Result<Response, ContractError> {
+    address = address.to_lowercase();
+
     if !NICKNAMES.has(deps.storage, &nickname.clone()) {
         return Err(ContractError::NicknameNotFound {});
     };
@@ -361,8 +332,8 @@ pub fn execute_proof_address(
         });
     }
 
-    let proved_address_particle = _prepare_particle(address.clone());
-    let address_particle = _prepare_particle(info.clone().sender.into());
+    let proved_address_particle = prepare_particle(address.clone())?;
+    let address_particle = prepare_particle(info.clone().sender.into())?;
 
     let config = CONFIG.load(deps.storage)?;
 
@@ -395,8 +366,10 @@ pub fn execute_remove_address(
     env: Env,
     info: MessageInfo,
     nickname: String,
-    address: String,
+    mut address: String,
 ) -> Result<Response, ContractError> {
+    address = address.to_lowercase();
+
     if !NICKNAMES.has(deps.storage, &nickname.clone()) {
         return Err(ContractError::NicknameNotFound {});
     };
@@ -517,9 +490,9 @@ pub fn execute_transfer_nft(
         }
     }
 
-    let nick_particle = _prepare_particle(nickname.clone());
-    let avatar_particle = _check_particle(avatar.clone())?;
-    let address_particle = _prepare_particle(new_owner.clone().to_string());
+    let nick_particle = prepare_particle(nickname.clone())?;
+    let avatar_particle = check_particle(avatar.clone())?;
+    let address_particle = prepare_particle(new_owner.clone().to_string())?;
 
     // link passport to new owner
     // prepare nickname <-> address <-> avatar cyberlinks
@@ -611,8 +584,8 @@ pub fn execute_burn(
     };
     NICKNAMES.remove(deps.storage, &token_info.clone().extension.nickname);
 
-    let nick_particle = _prepare_particle(token_info.clone().extension.nickname);
-    let cyberhole_particle = _prepare_particle("cyberhole".into());
+    let nick_particle = prepare_particle(token_info.clone().extension.nickname)?;
+    let cyberhole_particle = prepare_particle("cyberhole".into())?;
 
     if ACTIVE.has(deps.storage, &info.clone().sender) {
         let active = ACTIVE.load(deps.storage, &info.clone().sender)?;

@@ -1,12 +1,12 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, StdResult, MessageInfo, Reply};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, StdResult, MessageInfo, Reply, Api, Addr};
 use cw2::{get_contract_version, set_contract_version};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG};
-use crate::execute::{CYBERLINK_ID_MSG, execute_cyberlink, execute_update_executer, execute_update_owner};
+use crate::execute::{CYBERLINK_ID_MSG, execute_cyberlink, execute_update_admins, execute_update_executors};
 use crate::query::query_config;
 
 use cyber_std::CyberMsgWrapper;
@@ -26,12 +26,16 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let config = Config {
-        owner: deps.api.addr_validate(&msg.owner)?,
-        executer: deps.api.addr_validate(&msg.executer)?,
+        admins: map_validate(deps.api, &msg.admins)?,
+        executors: map_validate(deps.api, &msg.executers)?,
     };
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::default())
+}
+
+pub fn map_validate(api: &dyn Api, admins: &[String]) -> StdResult<Vec<Addr>> {
+    admins.iter().map(|addr| api.addr_validate(addr)).collect()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -42,8 +46,8 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::UpdateOwner { new_owner } => execute_update_owner(deps, env, info, new_owner),
-        ExecuteMsg::UpdateExecuter { new_executer } => execute_update_executer(deps, env, info, new_executer),
+        ExecuteMsg::UpdateAdmins { new_admins } => execute_update_admins(deps, env, info, new_admins),
+        ExecuteMsg::UpdateExecutors { new_executors } => execute_update_executors(deps, env, info, new_executors),
         ExecuteMsg::Cyberlink { links } => execute_cyberlink(deps, env, info, links),
     }
 }

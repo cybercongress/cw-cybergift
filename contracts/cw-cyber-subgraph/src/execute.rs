@@ -3,49 +3,49 @@ use cosmwasm_std::{attr, DepsMut, Env, MessageInfo, StdResult, SubMsg};
 use crate::error::ContractError;
 use crate::state::CONFIG;
 use cyber_std::{create_cyberlink_msg, Link, CyberMsgWrapper};
+use crate::contract::map_validate;
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
-
 pub const CYBERLINK_ID_MSG: u64 = 42;
 
-pub fn execute_update_owner(
+pub fn execute_update_admins(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    new_owner: String,
+    new_admins: Vec<String>,
 ) -> Result<Response, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;
-    if info.sender != cfg.owner {
+    if !cfg.can_modify(info.sender.as_ref()) {
         return Err(ContractError::Unauthorized {});
     }
 
-    let owner = deps.api.addr_validate(&new_owner)?;
+    let admins = map_validate(deps.api, &new_admins)?;
     CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
-        cfg.owner = owner;
+        cfg.admins = admins;
         Ok(cfg)
     })?;
 
-    Ok(Response::new().add_attributes(vec![attr("action", "update_owner")]))
+    Ok(Response::new().add_attributes(vec![attr("action", "update_admins")]))
 }
 
-pub fn execute_update_executer(
+pub fn execute_update_executors(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    new_executer: String,
+    new_executors: Vec<String>,
 ) -> Result<Response, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;
-    if info.sender != cfg.owner {
+    if !cfg.can_modify(info.sender.as_ref()) {
         return Err(ContractError::Unauthorized {});
     }
 
-    let executer = deps.api.addr_validate(&new_executer)?;
+    let executors = map_validate(deps.api, &new_executors)?;
     CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
-        cfg.executer = executer;
+        cfg.executors = executors;
         Ok(cfg)
     })?;
 
-    Ok(Response::new().add_attributes(vec![attr("action", "update_executer")]))
+    Ok(Response::new().add_attributes(vec![attr("action", "update_executors")]))
 }
 
 pub fn execute_cyberlink(
@@ -55,7 +55,7 @@ pub fn execute_cyberlink(
     cyberlink: Vec<Link>,
 ) -> Result<Response, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;
-    if info.sender != cfg.executer {
+    if !cfg.can_execute(info.sender.as_ref()) {
         return Err(ContractError::Unauthorized {});
     }
 

@@ -13,7 +13,7 @@ use sha3::Keccak256;
 use cyber_std::{CyberMsgWrapper, Link};
 use cw_cyber_subgraph::msg::{ExecuteMsg as SubgraphExecuteMsg};
 use crate::error::ContractError;
-use crate::execute::CYBERLINK_ID_MSG;
+use crate::execute::CYBERSPACE_ID_MSG;
 
 pub fn proof_address_ethereum(
     deps: Deps,
@@ -25,7 +25,6 @@ pub fn proof_address_ethereum(
     let mut hasher = Keccak256::new();
 
     let msg = passport_owner.add(":").add(&message);
-    // TODO add address:particle as sign message, where address is passport holder address
     hasher.update(format!("\x19Ethereum Signed Message:\n{}", msg.len()));
     hasher.update(msg);
     let hash = hasher.finalize();
@@ -224,7 +223,7 @@ pub fn prepare_cyberlink_submsg(
     links: Vec<Link>
 ) -> SubMsg<CyberMsgWrapper> {
     return SubMsg {
-        id: CYBERLINK_ID_MSG,
+        id: CYBERSPACE_ID_MSG,
         msg: WasmMsg::Execute {
             contract_addr,
             msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
@@ -233,6 +232,6 @@ pub fn prepare_cyberlink_submsg(
             funds: vec![],
         }.into(),
         gas_limit: None,
-        reply_on: ReplyOn::Never
+        reply_on: ReplyOn::Error
     }
 }
