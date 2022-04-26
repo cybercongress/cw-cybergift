@@ -577,10 +577,11 @@ dependencies = [
 
 [[package]]
 name = "cyber-std"
-version = "0.1.0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f4e8bf17594e02eccf0836407850894f6c61e522482be9120bc79cd356120d7"
 dependencies = [
  "cid 0.8.4",
- "cosmwasm-schema",
  "cosmwasm-std",
  "cw721",
  "schemars",
@@ -590,7 +591,9 @@ dependencies = [
 
 [[package]]
 name = "cyber-std-test"
-version = "0.1.0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b643ae21be84bc8090544971db72d9dce90b40abb1858729b9d2b3bc901fa8e3"
 dependencies = [
  "anyhow",
  "cosmwasm-std",

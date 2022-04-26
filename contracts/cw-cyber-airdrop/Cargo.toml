@@ -63,5 +63,5 @@ base64 = "0.13"
 cosmwasm-schema = { version = "1.0.0-beta8" }
 cw-multi-test = { version = "0.13.2" }
 cw1-whitelist = { version = "0.13.2" }
-cyber-std = { path = "../cyber-std" }
-cyber-std-test = { path = "../cyber-std-test" }
+cyber-std = { version = "0.2.0" }
+cyber-std-test = { version = "0.2.0" }
