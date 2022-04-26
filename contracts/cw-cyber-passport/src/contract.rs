@@ -4,7 +4,7 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Reply, StdResult, to
 use cyber_std::CyberMsgWrapper;
 
 use crate::error::ContractError;
-use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_set_subspaces, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate, CYBERSPACE_ID_MSG, execute_set_address_label};
+use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_set_subspaces, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate, CYBERSPACE_ID_MSG, execute_set_address_label, execute_update_data};
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{query_active_passport, query_address_by_nickname, query_config, query_metadata_by_nickname, query_passort_signed, query_passport_by_nickname, query_portid};
 use crate::state::{Config, CONFIG, PassportContract, PORTID};
@@ -42,6 +42,7 @@ pub fn execute(
         ExecuteMsg::CreatePassport {nickname, avatar} => execute_create_passport(deps, env, info, nickname, avatar),
         ExecuteMsg::UpdateName { old_nickname, new_nickname} => execute_update_name(deps, env, info, old_nickname, new_nickname),
         ExecuteMsg::UpdateAvatar { nickname, new_avatar} => execute_update_avatar(deps, env, info, nickname, new_avatar),
+        ExecuteMsg::UpdateData { nickname, data} => execute_update_data(deps, env, info, nickname, data),
         ExecuteMsg::ProofAddress { nickname, address, signature } => execute_proof_address(deps, env, info, nickname, address, signature),
         ExecuteMsg::RemoveAddress {nickname, address } => execute_remove_address(deps, env, info, nickname, address),
         ExecuteMsg::SetMinter { minter } => execute_set_minter(deps, env, info, minter),
@@ -93,11 +94,12 @@ pub fn reply(_deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contra
     Ok(Response::new())
 }
 
+// TODO test migrate
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _env: Env,
-    msg: MigrateMsg<Config>,
+    msg: MigrateMsg,
 ) -> Result<Response, ContractError> {
     match msg {
         MigrateMsg { version, config } => try_migrate(deps, version, config),

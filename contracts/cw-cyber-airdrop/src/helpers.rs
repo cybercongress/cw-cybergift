@@ -19,24 +19,12 @@ pub fn update_coefficient(
     let initial_balance = config.initial_balance;
     let current_balance = state.current_balance;
 
-    // TODO delete after debug
-    println!("{:?}", "update_coefficient");
-    println!("{:?}", coefficient_up.to_string());
-    println!("{:?}", coefficient_down.to_string());
-    println!("{:?}", initial_balance.to_string());
-    println!("{:?}", current_balance.to_string());
-    println!("{:?}", amount.to_string());
-
     let new_balance_ratio = Decimal::from_ratio(current_balance, initial_balance);
 
     let new_coefficient = Decimal::one()
         .sub(new_balance_ratio)
         .mul(Decimal::from_ratio(coefficient_down, 1u128))
         .add(Decimal::from_ratio(coefficient_up, 1u128).mul(new_balance_ratio));
-
-    // TODO delete after debug
-    println!("{:?}", new_balance_ratio.to_string());
-    println!("{:?}", new_coefficient.to_string());
 
     state.coefficient = new_coefficient;
     state.current_balance = current_balance - amount;

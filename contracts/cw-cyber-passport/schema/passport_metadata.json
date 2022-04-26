@@ -19,6 +19,12 @@
     "avatar": {
       "type": "string"
     },
+    "data": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "nickname": {
       "type": "string"
     }

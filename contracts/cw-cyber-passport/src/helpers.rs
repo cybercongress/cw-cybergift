@@ -59,6 +59,7 @@ pub fn proof_address_ethereum(
 
 fn get_recovery_param(v: u8) -> StdResult<u8> {
     match v {
+        // 0 and 1 added to support ledger
         0 => Ok(0),
         1 => Ok(1),
         27 => Ok(0),
@@ -121,7 +122,7 @@ pub fn proof_address_cosmos(
     message: String,
     signature: Binary,
 ) -> Result<bool, ContractError> {
-    // TODO clean up before release
+    // ADR-36 signed object, need to construct this object part by part and add encoded signed data with signer
     // let obj = json!(
     //     {
     //         "account_number":"0",

@@ -1,21 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use std::fmt::Debug;
-    use std::marker::PhantomData;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage};
-    use cosmwasm_std::{attr, from_binary, from_slice, BankMsg, Binary, Coin, CosmosMsg, Env, SubMsg, Uint128, Uint64, Empty, Addr, coin, coins, Querier, QuerierResult, Api, Storage, BlockInfo, CustomQuery, OwnedDeps, to_binary, BankQuery};
-    use serde::Deserialize;
-
-    use crate::execute::*;
-    use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, MerkleRootResponse, QueryMsg, ReleaseStageStateResponse, ReleaseStateResponse, StateResponse};
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{attr, from_binary, Binary, Coin, Uint128, Uint64, Empty, Addr, coins, BlockInfo};
+    use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg, ReleaseStageStateResponse, StateResponse};
     use crate::ContractError;
-    use std::ops::{Deref, DerefMut, Mul};
-    use anyhow::{bail, Result as AnyResult};
-    use cosmwasm_std::WasmMsg::Execute;
     use crate::contract::{execute, instantiate, query};
-    use cw_multi_test::{next_block, App, AppBuilder, Contract, ContractWrapper, Executor, BankKeeper, WasmKeeper, Module, CosmosRouter, AppResponse, BasicAppBuilder};
-    use schemars::JsonSchema;
-    use serde::de::DeserializeOwned;
+    use cw_multi_test::{next_block, Contract, ContractWrapper, Executor};
     use cyber_std::{CyberMsgWrapper};
     use cw_cyber_passport::msg::ExecuteMsg as PassportExecuteMsg;
     use cyber_std_test::CyberApp;
@@ -24,10 +14,10 @@ mod tests {
     const NATIVE_TOKEN: &str = "boot";
     const OWNER: &str = "owner0001";
     const CYB1: &str = "bostrom1wnpak7sfawsfv9c8vqe7naxfa4g99lv77d7c0z";
-    const CYB2: &str = "cyb0002";
-    const CYB3: &str = "cyb0003";
-    const CYB4: &str = "cyb0004";
-    const SOMEBODY: &str = "somebody";
+    // const CYB2: &str = "cyb0002";
+    // const CYB3: &str = "cyb0003";
+    // const CYB4: &str = "cyb0004";
+    // const SOMEBODY: &str = "somebody";
     const SPACE1: &str = "space1";
     const SPACE2: &str = "space2";
     const SPACE3: &str = "space3";
@@ -41,12 +31,6 @@ mod tests {
     pub fn next_hour(block: &mut BlockInfo) {
         block.time = block.time.plus_seconds(3600);
         block.height += 1;
-    }
-
-    fn mock_env_time(time_delta: u64) -> Env {
-        let mut env = mock_env();
-        env.block.time = env.block.time.plus_seconds(time_delta);
-        env
     }
 
     pub fn contract_gift() -> Box<dyn Contract<CyberMsgWrapper, Empty>> {
@@ -85,17 +69,6 @@ mod tests {
         )
         .with_reply(cw_cyber_subgraph::contract::reply);
         Box::new(contract)
-    }
-
-    pub type CyberDeps = OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>;
-
-    pub fn mock_deps_cyber() -> CyberDeps {
-        OwnedDeps {
-            storage: MockStorage::default(),
-            api: MockApi::default(),
-            querier: MockQuerier::default(),
-            custom_query_type: PhantomData,
-        }
     }
 
     fn mock_app(init_funds: &[Coin]) -> CyberApp {
@@ -173,7 +146,7 @@ mod tests {
         let gift_addr = instantiate_gift(app, passport_addr.to_string(), treasury_addr.to_string());
         app.update_block(next_block);
 
-        app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(OWNER),
             treasury_addr.clone(),
             &cw1_subkeys::msg::ExecuteMsg::IncreaseAllowance::<Empty> {
@@ -190,7 +163,7 @@ mod tests {
         let proof_subspace = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
         app.update_block(next_block);
 
-        app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(OWNER),
             passport_addr.clone(),
             &PassportExecuteMsg::SetSubspaces {
@@ -202,7 +175,7 @@ mod tests {
         );
         app.update_block(next_block);
 
-        app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(OWNER),
             passport_addr.clone(),
             &PassportExecuteMsg::SetMinter {
@@ -216,13 +189,13 @@ mod tests {
     }
 
     #[test]
-    fn claim1() {
+    fn proper_flow() {
         let init_funds = coins(INIT_BALANCE_OWNER.u128(), NATIVE_TOKEN);
         let mut app = mock_app(&init_funds);
 
         let (gift_addr, passport_addr, treasury_addr) = setup_contracts(&mut app);
 
-        let res = app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(OWNER),
             gift_addr.clone(),
             &ExecuteMsg::RegisterMerkleRoot {
@@ -231,7 +204,7 @@ mod tests {
             &[],
         );
 
-        let res = app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(CYB1),
             passport_addr.clone(),
             &PassportExecuteMsg::CreatePassport {
@@ -241,7 +214,7 @@ mod tests {
             &[],
         );
 
-        let res = app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(CYB1),
             passport_addr.clone(),
             &PassportExecuteMsg::ProofAddress {
@@ -252,7 +225,7 @@ mod tests {
             &[],
         );
 
-        let res = app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(CYB1),
             passport_addr.clone(),
             &PassportExecuteMsg::CreatePassport {
@@ -262,7 +235,7 @@ mod tests {
             &[],
         );
 
-        let res = app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(CYB1),
             passport_addr.clone(),
             &PassportExecuteMsg::ProofAddress {
@@ -273,7 +246,7 @@ mod tests {
             &[],
         );
 
-        let res = app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(CYB1),
             gift_addr.clone(),
             &ExecuteMsg::Claim {
@@ -285,7 +258,7 @@ mod tests {
             &[],
         );
 
-        let res = app.execute_contract(
+        let _res = app.execute_contract(
             Addr::unchecked(CYB1),
             gift_addr.clone(),
             &ExecuteMsg::Claim {
@@ -306,7 +279,7 @@ mod tests {
                 },
                 &[],
             );
-            println!("Release [ETH]- {:?}", res);
+            println!("Release [ETH][{:?}]- {:?}", i, res);
 
             let res = app.execute_contract(
                 Addr::unchecked(CYB1),
@@ -316,24 +289,25 @@ mod tests {
                 },
                 &[],
             );
-            println!("Release- [COSMOS]{:?}", res);
-
-            // let info: StateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::State {}).unwrap();
-            // println!("stage{:?}_ - {:?}", i, info);
+            println!("Release [CMS][{:?}]- {:?}", i, res);
 
             app.update_block(next_hour);
         }
 
 
-        println!("gift_balance- {:?}", app.wrap().query_balance(&gift_addr, "boot").unwrap());
-        println!("treasury_balance- {:?}", app.wrap().query_balance(&treasury_addr, "boot").unwrap());
-        println!("passport1_balance- {:?}", app.wrap().query_balance(&Addr::unchecked(CYB1), "boot").unwrap());
-        // println!("passport2_balance- {:?}", app.wrap().query_balance(&Addr::unchecked(CYB2), "boot").unwrap());
+        println!("GIFT BAL - {:?}", app.wrap().query_balance(&gift_addr, "boot").unwrap());
+        println!("TREASURY BAL - {:?}", app.wrap().query_balance(&treasury_addr, "boot").unwrap());
+        println!("PASSPORT #1 BAL- {:?}", app.wrap().query_balance(&Addr::unchecked(CYB1), "boot").unwrap());
 
         for i in 0..10 {
-            let info: ReleaseStageStateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::ReleaseStageState { stage: Uint64::from(1u64) }).unwrap();
-            println!("stage{:?}_ - {:?}", i, info);
+            let info: ReleaseStageStateResponse = app.wrap().query_wasm_smart(
+                &gift_addr,
+                &QueryMsg::ReleaseStageState { stage: Uint64::from(1u64) }
+            ).unwrap();
+            println!("STAGE {:?} - RELEASES {:?}", i, info.releases.u64());
         }
+        let info: StateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::State {}).unwrap();
+        println!("STATE - {:?}", info);
 
     }
 

@@ -77,6 +77,30 @@
     {
       "type": "object",
       "required": [
+        "update_data"
+      ],
+      "properties": {
+        "update_data": {
+          "type": "object",
+          "required": [
+            "data",
+            "nickname"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "nickname": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "proof_address"
       ],
       "properties": {
@@ -564,6 +588,12 @@
         },
         "avatar": {
           "type": "string"
+        },
+        "data": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "nickname": {
           "type": "string"

@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{Decimal, Uint128, Uint64};
 use cw_utils::Expiration;
+use crate::state::{Config, State};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    /// Owner if none set to info.sender.
     pub owner: Option<String>,
     pub passport: String,
     pub treasury: String,
@@ -22,13 +22,13 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     UpdateOwner {
-        /// NewOwner if non sent, contract gets locked. Recipients can receive airdrops
-        /// but owner cannot register new stages.
         new_owner: Option<String>,
     },
-    /// Allows to easily debug
     UpdatePassportAddr {
         new_passport_addr: String,
+    },
+    UpdateTreasuryAddr {
+        new_treasury_addr: String,
     },
     UpdateTarget {
         new_target: Uint64,
@@ -37,7 +37,6 @@ pub enum ExecuteMsg {
         /// MerkleRoot is hex-encoded merkle root.
         merkle_root: String,
     },
-    /// Claim does not check if contract has enough funds, owner must ensure it.
     Claim {
         nickname: String,
         gift_claiming_address: String,
@@ -123,4 +122,8 @@ pub struct AddressResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub version: String,
+    pub config: Option<Config>,
+    pub state: Option<State>,
+}

@@ -51,6 +51,9 @@ pub enum ContractError {
     #[error("Name is not valid")]
     NotValidName {},
 
+    #[error("Data is not valid")]
+    NotValidData {},
+
     #[error("Nickname already exists")]
     NicknameAlreadyExists {},
 

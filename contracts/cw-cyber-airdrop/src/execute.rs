@@ -2,12 +2,13 @@ use cosmwasm_std::{Addr, attr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty
 
 use crate::error::ContractError;
 use crate::helpers::{update_coefficient, verify_merkle_proof};
-use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE, ClaimState, STATE, RELEASE_INFO};
+use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE, ClaimState, STATE, RELEASE_INFO, Config, State};
 use cw_utils::{Expiration, DAY, HOUR};
 use std::ops::{Add, Mul};
 use cw_cyber_passport::msg::{QueryMsg as PassportQueryMsg};
 use crate::msg::{AddressResponse, SignatureResponse};
 use cw1_subkeys::msg::{ExecuteMsg as Cw1ExecuteMsg};
+use cw2::{get_contract_version, set_contract_version};
 
 const RELEASE_STAGES: u64 = 9;
 
@@ -52,14 +53,39 @@ pub fn execute_update_passport(
 
     let passport = deps.api.addr_validate(&new_passport)?;
 
-    CONFIG.update(deps.storage, |mut exists| -> StdResult<_> {
-        exists.passport_addr = passport;
-        Ok(exists)
+    CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
+        cfg.passport_addr = passport;
+        Ok(cfg)
     })?;
 
     Ok(Response::new().add_attributes(vec![
         attr("action", "update_passport"),
         attr("passport", new_passport),
+    ]))
+}
+
+pub fn execute_update_treasury(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    new_treasury: String,
+) -> Result<Response, ContractError> {
+    let cfg = CONFIG.load(deps.storage)?;
+    let owner = cfg.owner.ok_or(ContractError::Unauthorized {})?;
+    if info.sender != owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let treasury = deps.api.addr_validate(&new_treasury)?;
+
+    CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
+        cfg.treasury_addr = treasury;
+        Ok(cfg)
+    })?;
+
+    Ok(Response::new().add_attributes(vec![
+        attr("action", "update_treasury"),
+        attr("treasury", new_treasury),
     ]))
 }
 
@@ -75,9 +101,9 @@ pub fn execute_update_target(
         return Err(ContractError::Unauthorized {});
     }
 
-    CONFIG.update(deps.storage, |mut exists| -> StdResult<_> {
-        exists.target_claim = new_target;
-        Ok(exists)
+    CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
+        cfg.target_claim = new_target;
+        Ok(cfg)
     })?;
 
     Ok(Response::new().add_attributes(vec![
@@ -130,11 +156,6 @@ pub fn execute_claim(
     let config = CONFIG.load(deps.storage)?;
     let mut state = STATE.load(deps.storage)?;
     let claim_amount = gift_amount * state.coefficient;
-
-    // TODO: delete after debug
-    println!("{:?}", "execute_claim");
-    println!("{:?}", state.coefficient);
-    println!("{:?}", claim_amount.to_string());
 
     if state.current_balance < claim_amount {
         return Err(ContractError::GiftIsOver {});
@@ -331,4 +352,26 @@ pub fn execute_release(
            attr("amount", amount),
        ])
     )
+}
+
+pub fn try_migrate(
+    deps: DepsMut,
+    version: String,
+    config: Option<Config>,
+    state: Option<State>,
+) -> Result<Response, ContractError> {
+    let contract_version = get_contract_version(deps.storage)?;
+    set_contract_version(deps.storage, contract_version.contract, version)?;
+
+    if config.is_some() {
+        CONFIG.save(deps.storage, &config.unwrap())?
+    }
+    if state.is_some() {
+        STATE.save(deps.storage, &state.unwrap())?
+    }
+
+    Ok(Response::new().add_attributes(vec![
+        attr("method", "try_migrate"),
+        attr("version", contract_version.version),
+    ]))
 }

@@ -40,4 +40,5 @@ pub struct PassportMetadata {
     pub addresses: Option<Vec<LabeledAddress>>,
     pub avatar: String,
     pub nickname: String,
+    pub data: Option<String>,
 }

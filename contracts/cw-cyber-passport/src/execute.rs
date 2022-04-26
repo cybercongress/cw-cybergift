@@ -15,7 +15,8 @@ use crate::state::{Config, CONFIG};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
-// TODO discuss and make this configurable in config
+// TODO discuss and make this configurable in config (or not)
+// TODO set to constitution in production deployment
 const CONSTITUTION: &str = "QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV";
 pub const CYBERSPACE_ID_MSG: u64 = 420;
 
@@ -53,7 +54,7 @@ pub fn execute_create_passport(
 
     let config = CONFIG.load(deps.storage)?;
 
-    // prepare nickname <-> address <-> avatar cyberlinks
+    // prepare address <-> nickname <-> avatar cyberlinks
     // nickname <-> address
     let name_subgraph_submsg = prepare_cyberlink_submsg(
         config.name_subspace.into(),
@@ -69,17 +70,17 @@ pub fn execute_create_passport(
         ]
     );
 
-    // address <-> avatar cyberlinks
+    // nickname <-> avatar cyberlinks
     let avatar_subgraph_submsg = prepare_cyberlink_submsg(
         config.avatar_subspace.into(),
         vec![
             Link{
-                from: address_particle.clone().into(),
+                from: nick_particle.clone().into(),
                 to: avatar_particle.clone().into()
             },
             Link{
                 from: avatar_particle.clone().into(),
-                to: address_particle.clone().into()
+                to: nick_particle.clone().into()
             }
         ]
     );
@@ -92,7 +93,8 @@ pub fn execute_create_passport(
         extension: PassportMetadata {
             addresses: None,
             avatar,
-            nickname: nickname.clone()
+            nickname: nickname.clone(),
+            data: None
         },
     };
 
@@ -241,21 +243,21 @@ pub fn execute_update_avatar(
         })?;
 
     let avatar_particle = check_particle(new_avatar.clone())?;
-    let address_particle = prepare_particle(info.clone().sender.into())?;
+    let nick_particle = prepare_particle(nickname.clone())?;
 
     let config = CONFIG.load(deps.storage)?;
 
-    // prepare new avatar <-> address cyberlinks
+    // prepare new avatar <-> nickname cyberlinks
     let avatar_subgraph_submsg = prepare_cyberlink_submsg(
         config.avatar_subspace.into(),
         vec![
             Link{
-                from: address_particle.clone().into(),
+                from: nick_particle.clone().into(),
                 to: avatar_particle.clone().into()
             },
             Link{
                 from: avatar_particle.clone().into(),
-                to: address_particle.clone().into()
+                to: nick_particle.clone().into()
             }
         ]
     );
@@ -267,6 +269,46 @@ pub fn execute_update_avatar(
             attr("nickname", nickname),
             attr("new_avatar", new_avatar),
     ]))
+}
+
+pub fn execute_update_data(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    nickname: String,
+    new_data: String
+) -> Result<Response, ContractError> {
+    let data_length = new_data.clone().len();
+    if data_length > 256 && data_length < 3 {
+        return Err(ContractError::NotValidData {});
+    }
+
+    if !NICKNAMES.has(deps.storage, &nickname.clone()) {
+        return Err(ContractError::NicknameNotFound {});
+    };
+
+    let cw721_contract = PassportContract::default();
+    let address_portid = NICKNAMES.load(deps.storage, &nickname)?;
+    let nft_owner = cw721_contract.owner_of(deps.as_ref(), env.clone(), address_portid.clone().portid, false)?;
+    if nft_owner.owner != info.clone().sender {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    cw721_contract
+        .tokens
+        .update(deps.storage, &address_portid.clone().portid, |token| match token {
+            Some(mut token_info) => {
+                token_info.extension.data = Option::from(new_data.clone());
+                Ok(token_info)
+            }
+            None => return Err(ContractError::TokenNotFound {}),
+        })?;
+
+    Ok(Response::new()
+        .add_attributes(vec![
+            attr("action", "update_data"),
+            attr("nickname", nickname),
+        ]))
 }
 
 pub fn execute_proof_address(
@@ -305,7 +347,6 @@ pub fn execute_proof_address(
     }
 
     // save address if not exists or there is enought space for address (<=8)
-    // TODO discuss to make max address count configurable
     if proof_res {
         let mut token_info = cw721_contract.tokens.load(deps.storage, &address_portid.clone().portid)?;
         if token_info.extension.addresses.is_some() {
@@ -333,21 +374,21 @@ pub fn execute_proof_address(
     }
 
     let proved_address_particle = prepare_particle(address.clone())?;
-    let address_particle = prepare_particle(info.clone().sender.into())?;
+    let nick_particle = prepare_particle(nickname.clone())?;
 
     let config = CONFIG.load(deps.storage)?;
 
-    // proved_address <-> address
+    // proved_address <-> nickname
     let proof_subgraph_submsg = prepare_cyberlink_submsg(
         config.proof_subspace.into(),
         vec![
             Link{
-                from: address_particle.clone().into(),
+                from: nick_particle.clone().into(),
                 to: proved_address_particle.clone().into(),
             },
             Link{
                 from: proved_address_particle.clone().into(),
-                to: address_particle.clone().into()
+                to: nick_particle.clone().into()
             }
         ]
     );
@@ -410,33 +451,33 @@ pub fn execute_remove_address(
         ]))
 }
 
-// proved addresses are empty during mint
-// allow owner to mint passports, used only during development stage
-// TODO disable before release
+// NOTE disabled
 pub fn execute_mint(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    mint_msg: MintMsg<Extension>,
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _mint_msg: MintMsg<Extension>,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    if info.clone().sender != config.owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    if mint_msg.clone().extension.addresses.is_some() {
-        return Err(ContractError::InvalidInitialization {});
-    }
-
-    // contract itself can only mint
-    let internal_info = MessageInfo {
-        sender: env.clone().contract.address,
-        funds: info.funds,
-    };
-
-    let cw721_contract = PassportContract::default();
-    let response = cw721_contract.mint(deps, env, internal_info, mint_msg)?;
-    Ok(response)
+    // only for dev and test phase
+    // let config = CONFIG.load(deps.storage)?;
+    // if info.clone().sender != config.owner {
+    //     return Err(ContractError::Unauthorized {});
+    // }
+    //
+    // if mint_msg.clone().extension.addresses.is_some() {
+    //     return Err(ContractError::InvalidInitialization {});
+    // }
+    //
+    // // contract itself can only mint
+    // let internal_info = MessageInfo {
+    //     sender: env.clone().contract.address,
+    //     funds: info.funds,
+    // };
+    //
+    // let cw721_contract = PassportContract::default();
+    // let response = cw721_contract.mint(deps, env, internal_info, mint_msg)?;
+    // Ok(response)
+    Err(ContractError::Unauthorized {})
 }
 
 pub fn execute_transfer_nft(
@@ -455,7 +496,7 @@ pub fn execute_transfer_nft(
 
     let new_owner = deps.api.addr_validate(&recipient)?;
 
-    // clear proved addresses
+    // clear proved addresses and data
     cw721_contract
         .tokens
         .update(deps.storage, &token_id.clone(), |token| match token {
@@ -463,6 +504,7 @@ pub fn execute_transfer_nft(
                 nickname = token_info.clone().extension.nickname;
                 avatar = token_info.clone().extension.avatar;
                 token_info.extension.addresses = Some(vec![]);
+                token_info.extension.data = None;
                 Ok(token_info)
             }
             None => return Err(ContractError::TokenNotFound {}),
@@ -495,7 +537,7 @@ pub fn execute_transfer_nft(
     let address_particle = prepare_particle(new_owner.clone().to_string())?;
 
     // link passport to new owner
-    // prepare nickname <-> address <-> avatar cyberlinks
+    // prepare address <-> nickname <-> avatar cyberlinks
     // nickname <-> address
     let name_subgraph_submsg = prepare_cyberlink_submsg(
         config.name_subspace.into(),
@@ -510,17 +552,17 @@ pub fn execute_transfer_nft(
             },
         ]
     );
-    // address <-> avatar
+    // nickname <-> avatar
     let avatar_subgraph_submsg = prepare_cyberlink_submsg(
         config.avatar_subspace.into(),
         vec![
             Link{
-                from: address_particle.clone().into(),
+                from: nick_particle.clone().into(),
                 to: avatar_particle.clone().into()
             },
             Link{
                 from: avatar_particle.clone().into(),
-                to: address_particle.clone().into()
+                to: nick_particle.clone().into()
             }
         ]
     );
@@ -551,10 +593,25 @@ pub fn execute_send_nft(
                 nickname = token_info.clone().extension.nickname;
                 avatar = token_info.clone().extension.avatar;
                 token_info.extension.addresses = Some(vec![]);
+                token_info.extension.data = None;
                 Ok(token_info)
             }
             None => return Err(ContractError::TokenNotFound {}),
         })?;
+
+    if !NICKNAMES.has(deps.storage, &nickname.clone()) {
+        return Err(ContractError::NicknameNotFound {});
+    };
+
+    // map nickname to new owner (contract in this case)
+    NICKNAMES.save(
+        deps.storage,
+        &nickname.clone(),
+        &AddressPortID{
+            address: deps.api.addr_validate(&contract)?,
+            portid: token_id.clone()
+        }
+    )?;
 
     if ACTIVE.has(deps.storage, &info.clone().sender) {
         let active = ACTIVE.load(deps.storage, &info.clone().sender)?;
@@ -563,7 +620,6 @@ pub fn execute_send_nft(
         }
     }
 
-    // TODO think about contract as passport holder (cyberlinks/nickname?)
 
     let response = cw721_contract.send_nft(deps, env, info, contract, token_id, msg)?;
     Ok(response)

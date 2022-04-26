@@ -10,7 +10,7 @@ use cw721_base::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::state::Extension;
+use crate::state::{Config, Extension};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -58,6 +58,10 @@ pub enum ExecuteMsg {
     UpdateAvatar{
         nickname: String,
         new_avatar: String
+    },
+    UpdateData{
+        nickname: String,
+        data: String,
     },
     ProofAddress{
         nickname: String,
@@ -304,9 +308,9 @@ pub struct SignatureResponse {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
-pub struct MigrateMsg<T> {
+pub struct MigrateMsg {
     pub version: String,
-    pub config: Option<T>,
+    pub config: Option<Config>,
 }
 
 

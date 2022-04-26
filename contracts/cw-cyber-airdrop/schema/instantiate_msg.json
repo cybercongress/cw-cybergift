@@ -29,7 +29,6 @@
       "$ref": "#/definitions/Uint128"
     },
     "owner": {
-      "description": "Owner if none set to info.sender.",
       "type": [
         "string",
         "null"
