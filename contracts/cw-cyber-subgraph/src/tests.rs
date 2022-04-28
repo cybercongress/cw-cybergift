@@ -6,7 +6,7 @@ mod tests {
     use crate::ContractError;
 
     #[test]
-    fn proper_instantiation() {
+    fn proper_flow() {
         assert_eq!(true, true)
     }
 }

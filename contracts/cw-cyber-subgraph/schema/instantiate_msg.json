@@ -3,15 +3,21 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "executer",
-    "owner"
+    "admins",
+    "executers"
   ],
   "properties": {
-    "executer": {
-      "type": "string"
+    "admins": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
-    "owner": {
-      "type": "string"
+    "executers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   }
 }

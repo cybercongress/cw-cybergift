@@ -3,12 +3,13 @@ use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{Decimal, Uint128, Uint64};
 use cw_utils::Expiration;
+use crate::state::{Config, State};
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    /// Owner if none set to info.sender.
     pub owner: Option<String>,
     pub passport: String,
+    pub treasury: String,
     pub allowed_native: String,
     pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
@@ -21,13 +22,13 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     UpdateOwner {
-        /// NewOwner if non sent, contract gets locked. Recipients can receive airdrops
-        /// but owner cannot register new stages.
         new_owner: Option<String>,
     },
-    /// Allows to easily debug
     UpdatePassportAddr {
         new_passport_addr: String,
+    },
+    UpdateTreasuryAddr {
+        new_treasury_addr: String,
     },
     UpdateTarget {
         new_target: Uint64,
@@ -36,7 +37,6 @@ pub enum ExecuteMsg {
         /// MerkleRoot is hex-encoded merkle root.
         merkle_root: String,
     },
-    /// Claim does not check if contract has enough funds, owner must ensure it.
     Claim {
         nickname: String,
         gift_claiming_address: String,
@@ -51,9 +51,12 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     Config {},
+    State {},
     MerkleRoot {},
     IsClaimed { address: String },
+    Claim { address: String },
     ReleaseState { address: String },
+    ReleaseStageState { stage: Uint64 },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -63,10 +66,15 @@ pub struct ConfigResponse {
     pub passport: String,
     pub target_claim: Uint64,
     pub allowed_native: String,
-    pub current_balance: Uint128,
     pub initial_balance: Uint128,
     pub coefficient_up: Uint128,
     pub coefficient_down: Uint128,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct StateResponse {
+    pub current_balance: Uint128,
     pub coefficient: Decimal,
     pub claims: Uint64,
     pub releases: Uint64,
@@ -84,11 +92,22 @@ pub struct IsClaimedResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ClaimResponse {
+    pub claim: Uint128,
+    pub multiplier: Decimal
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReleaseStateResponse {
     pub address: String,
     pub balance_claim: Uint128,
     pub stage: Uint64,
     pub stage_expiration: Expiration,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ReleaseStageStateResponse {
+    pub releases: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -103,4 +122,8 @@ pub struct AddressResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub version: String,
+    pub config: Option<Config>,
+    pub state: Option<State>,
+}

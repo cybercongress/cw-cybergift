@@ -1,60 +1,314 @@
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{
-        attr, from_binary, from_slice, BankMsg, Binary, Coin, CosmosMsg, Env, SubMsg, Uint128,
-        Uint64,
-    };
-    use serde::Deserialize;
-
-    use crate::execute::*;
-    use crate::msg::{
-        ClaimMsg, ClaimerType, ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse,
-        MerkleRootResponse, QueryMsg, ReleaseStateResponse,
-    };
+    use cosmwasm_std::{attr, from_binary, Binary, Coin, Uint128, Uint64, Empty, Addr, coins, BlockInfo};
+    use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg, ReleaseStageStateResponse, StateResponse};
     use crate::ContractError;
-    use std::ops::Mul;
+    use crate::contract::{execute, instantiate, query};
+    use cw_multi_test::{next_block, Contract, ContractWrapper, Executor};
+    use cyber_std::{CyberMsgWrapper};
+    use cw_cyber_passport::msg::ExecuteMsg as PassportExecuteMsg;
+    use cyber_std_test::CyberApp;
+
 
     const NATIVE_TOKEN: &str = "boot";
+    const OWNER: &str = "owner0001";
+    const CYB1: &str = "bostrom1wnpak7sfawsfv9c8vqe7naxfa4g99lv77d7c0z";
+    // const CYB2: &str = "cyb0002";
+    // const CYB3: &str = "cyb0003";
+    // const CYB4: &str = "cyb0004";
+    // const SOMEBODY: &str = "somebody";
+    const SPACE1: &str = "space1";
+    const SPACE2: &str = "space2";
+    const SPACE3: &str = "space3";
+    const INIT_BALANCE_OWNER: Uint128 = Uint128::new(10000000000000);
+    const INIT_BALANCE_TREASURY: Uint128 = Uint128::new(300000000);
+    const CF_UP: Uint128 = Uint128::new(20);
+    const CF_DOWN: Uint128 = Uint128::new(5);
+    const CF: Uint128 = Uint128::new(20);
+    const TARGET_CLAIM: Uint64 = Uint64::new(2);
 
-    fn mock_env_time(time_delta: u64) -> Env {
-        let mut env = mock_env();
-        env.block.time = env.block.time.plus_seconds(time_delta);
-        env
+    pub fn next_hour(block: &mut BlockInfo) {
+        block.time = block.time.plus_seconds(3600);
+        block.height += 1;
+    }
+
+    pub fn contract_gift() -> Box<dyn Contract<CyberMsgWrapper, Empty>> {
+        let contract = ContractWrapper::new_with_empty(
+            crate::contract::execute,
+            crate::contract::instantiate,
+            crate::contract::query,
+        );
+        Box::new(contract)
+    }
+
+    pub fn contract_passport() -> Box<dyn Contract<CyberMsgWrapper, Empty>> {
+        let contract = ContractWrapper::new(
+            cw_cyber_passport::contract::execute,
+            cw_cyber_passport::contract::instantiate,
+            cw_cyber_passport::contract::query,
+        )
+        .with_reply(cw_cyber_passport::contract::reply);
+        Box::new(contract)
+    }
+
+    pub fn contract_treasury() -> Box<dyn Contract<CyberMsgWrapper, Empty>> {
+        let contract = ContractWrapper::new_with_empty(
+            cw1_subkeys::contract::execute,
+            cw1_subkeys::contract::instantiate,
+            cw1_subkeys::contract::query,
+        );
+        Box::new(contract)
+    }
+
+    pub fn contract_subgraph() -> Box<dyn Contract<CyberMsgWrapper, Empty>> {
+        let contract = ContractWrapper::new(
+            cw_cyber_subgraph::contract::execute,
+            cw_cyber_subgraph::contract::instantiate,
+            cw_cyber_subgraph::contract::query,
+        )
+        .with_reply(cw_cyber_subgraph::contract::reply);
+        Box::new(contract)
+    }
+
+    fn mock_app(init_funds: &[Coin]) -> CyberApp {
+        let mut app = CyberApp::new();
+        app.init_modules(|router, _, storage| {
+            router
+                .bank
+                .init_balance(storage, &Addr::unchecked(OWNER), init_funds.to_vec())
+                .unwrap();
+            });
+        app
+    }
+
+    fn instantiate_gift(app: &mut CyberApp, passport: String, treasury: String) -> Addr {
+        let gift_id = app.store_code(contract_gift());
+        let msg = crate::msg::InstantiateMsg {
+            owner: Some(OWNER.to_string()),
+            passport: passport.to_string(),
+            treasury: treasury.to_string(),
+            allowed_native: NATIVE_TOKEN.to_string(),
+            initial_balance: INIT_BALANCE_TREASURY,
+            coefficient_up: CF_UP,
+            coefficient_down: CF_DOWN,
+            coefficient: CF,
+            target_claim: TARGET_CLAIM
+        };
+        app.instantiate_contract(gift_id, Addr::unchecked(OWNER), &msg, &[], "gift", None)
+            .unwrap()
+    }
+
+    fn instantiate_passport(app: &mut CyberApp) -> Addr {
+        let passport_id = app.store_code(contract_passport());
+        let msg = cw_cyber_passport::msg::InstantiateMsg {
+            name: "MoonPassport".to_string(),
+            symbol: "MP".to_string(),
+            minter: "cosmos2contract".to_string(),
+            owner: OWNER.to_string(),
+            name_subspace: SPACE1.to_string(),
+            avatar_subspace: SPACE2.to_string(),
+            proof_subspace: SPACE3.to_string(),
+        };
+        app.instantiate_contract(passport_id, Addr::unchecked(OWNER), &msg, &[], "passport", None)
+            .unwrap()
+    }
+
+    fn instantiate_treasury(app: &mut CyberApp) -> Addr {
+        let treasury_id = app.store_code(contract_treasury());
+        let msg = cw1_whitelist::msg::InstantiateMsg {
+            admins: vec![OWNER.to_string()],
+            mutable: false
+        };
+        app.instantiate_contract(treasury_id, Addr::unchecked(OWNER), &msg, &coins(INIT_BALANCE_TREASURY.u128(), NATIVE_TOKEN), "treasury", None)
+            .unwrap()
+    }
+
+    fn instantiate_subgraph(app: &mut CyberApp, owner: String, executer: String) -> Addr {
+        let treasury_id = app.store_code(contract_subgraph());
+        let msg = cw_cyber_subgraph::msg::InstantiateMsg {
+            admins: vec![owner.to_string()],
+            executers: vec![executer.to_string()]
+        };
+        app.instantiate_contract(treasury_id, Addr::unchecked(OWNER), &msg, &[], "subgraph", None)
+            .unwrap()
+    }
+
+    fn setup_contracts(
+        app: &mut CyberApp,
+    ) -> (Addr, Addr, Addr) {
+        let treasury_addr = instantiate_treasury(app);
+        app.update_block(next_block);
+
+        let passport_addr = instantiate_passport(app);
+        app.update_block(next_block);
+
+        let gift_addr = instantiate_gift(app, passport_addr.to_string(), treasury_addr.to_string());
+        app.update_block(next_block);
+
+        let _res = app.execute_contract(
+            Addr::unchecked(OWNER),
+            treasury_addr.clone(),
+            &cw1_subkeys::msg::ExecuteMsg::IncreaseAllowance::<Empty> {
+                spender: gift_addr.to_string(),
+                amount: Coin::new(INIT_BALANCE_TREASURY.u128(), NATIVE_TOKEN),
+                expires: None,
+            },
+            &[],
+        );
+        app.update_block(next_block);
+
+        let name_subspace = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
+        let avatar_subspace = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
+        let proof_subspace = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
+        app.update_block(next_block);
+
+        let _res = app.execute_contract(
+            Addr::unchecked(OWNER),
+            passport_addr.clone(),
+            &PassportExecuteMsg::SetSubspaces {
+                name_subspace: name_subspace.to_string(),
+                avatar_subspace: avatar_subspace.to_string(),
+                proof_subspace: proof_subspace.to_string()
+            },
+            &[],
+        );
+        app.update_block(next_block);
+
+        let _res = app.execute_contract(
+            Addr::unchecked(OWNER),
+            passport_addr.clone(),
+            &PassportExecuteMsg::SetMinter {
+                minter: passport_addr.to_string()
+            },
+            &[],
+        );
+        app.update_block(next_block);
+
+        (gift_addr, passport_addr, treasury_addr)
     }
 
     #[test]
-    fn proper_instantiation() {
-        let mut deps = mock_dependencies();
+    fn proper_flow() {
+        let init_funds = coins(INIT_BALANCE_OWNER.u128(), NATIVE_TOKEN);
+        let mut app = mock_app(&init_funds);
 
-        let msg = InstantiateMsg {
-            owner: Some("owner0000".to_string()),
-            passport: "passport".to_string(),
-            target_claim: Uint64::new(4),
-            allowed_native: NATIVE_TOKEN.to_string(),
-            initial_balance: Uint128::new(10000000000000),
-            coefficient_up: Uint128::new(20),
-            coefficient_down: Uint128::new(5),
-            coefficient: Uint128::new(20),
-        };
+        let (gift_addr, passport_addr, treasury_addr) = setup_contracts(&mut app);
 
-        let env = mock_env();
-        let info = mock_info(
-            "addr0000",
-            &[Coin {
-                denom: NATIVE_TOKEN.to_string(),
-                amount: Uint128::new(10000000000000),
-            }],
+        let _res = app.execute_contract(
+            Addr::unchecked(OWNER),
+            gift_addr.clone(),
+            &ExecuteMsg::RegisterMerkleRoot {
+                merkle_root: "96c287db438923b77acee90e134e1f2d9bc506bc5544eab8e89e8886b83ca5c7".to_string()
+            },
+            &[],
         );
 
-        // we can just call .unwrap() to assert this was a success
-        let _res = instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
+        let _res = app.execute_contract(
+            Addr::unchecked(CYB1),
+            passport_addr.clone(),
+            &PassportExecuteMsg::CreatePassport {
+                nickname: "passport1".to_string(),
+                avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
+            },
+            &[],
+        );
 
-        // it worked, let's query the state
-        let res = query(deps.as_ref(), env, QueryMsg::Config {}).unwrap();
-        let config: ConfigResponse = from_binary(&res).unwrap();
-        assert_eq!("owner0000", config.owner.unwrap().as_str());
-        assert_eq!("boot", config.allowed_native.as_str());
+        let _res = app.execute_contract(
+            Addr::unchecked(CYB1),
+            passport_addr.clone(),
+            &PassportExecuteMsg::ProofAddress {
+                nickname: "passport1".to_string(),
+                address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
+                signature: Binary::from_base64("0x25e7436c57e830643dc475745c28d98472074d0adb838bef1813859b06c1099619fcc67daa4b65d764c6ea1f93c637f1a8eb40515e639528f2abc5c95b46d3521c").unwrap(),
+            },
+            &[],
+        );
+
+        let _res = app.execute_contract(
+            Addr::unchecked(CYB1),
+            passport_addr.clone(),
+            &PassportExecuteMsg::CreatePassport {
+                nickname: "passport2".to_string(),
+                avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
+            },
+            &[],
+        );
+
+        let _res = app.execute_contract(
+            Addr::unchecked(CYB1),
+            passport_addr.clone(),
+            &PassportExecuteMsg::ProofAddress {
+                nickname: "passport2".to_string(),
+                address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
+                signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLCJzaWduYXR1cmUiOiJTZG40Z25pQzR2MExJM2Z2U0ZMbmRtM05HZ2VFNUlJWDJOSmZsN1cxWmcxOEplTUNSbHMySkNvK2xUTll0elZKN0RUaFRuK3k0NitXUTdvaWJLaHl4UT09In0=").unwrap(),
+            },
+            &[],
+        );
+
+        let _res = app.execute_contract(
+            Addr::unchecked(CYB1),
+            gift_addr.clone(),
+            &ExecuteMsg::Claim {
+                nickname: "passport1".to_string(),
+                gift_claiming_address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
+                gift_amount: Uint128::new(10000000),
+                proof: vec!["020feac4e445b8710e223ef9d32d60d0fa060e5a33c421c217ac4976641afa9f".to_string()],
+            },
+            &[],
+        );
+
+        let _res = app.execute_contract(
+            Addr::unchecked(CYB1),
+            gift_addr.clone(),
+            &ExecuteMsg::Claim {
+                nickname: "passport2".to_string(),
+                gift_claiming_address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
+                gift_amount: Uint128::new(5000000),
+                proof: vec!["c0d07d81376100727f8de10cbbc3f46c04c13a906c4a8de884abebaa94d33737".to_string()]
+            },
+            &[],
+        );
+
+        for i in 0..10 {
+            let res = app.execute_contract(
+                Addr::unchecked(CYB1),
+                gift_addr.clone(),
+                &ExecuteMsg::Release {
+                    gift_address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
+                },
+                &[],
+            );
+            println!("Release [ETH][{:?}]- {:?}", i, res);
+
+            let res = app.execute_contract(
+                Addr::unchecked(CYB1),
+                gift_addr.clone(),
+                &ExecuteMsg::Release {
+                    gift_address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
+                },
+                &[],
+            );
+            println!("Release [CMS][{:?}]- {:?}", i, res);
+
+            app.update_block(next_hour);
+        }
+
+
+        println!("GIFT BAL - {:?}", app.wrap().query_balance(&gift_addr, "boot").unwrap());
+        println!("TREASURY BAL - {:?}", app.wrap().query_balance(&treasury_addr, "boot").unwrap());
+        println!("PASSPORT #1 BAL- {:?}", app.wrap().query_balance(&Addr::unchecked(CYB1), "boot").unwrap());
+
+        for i in 0..10 {
+            let info: ReleaseStageStateResponse = app.wrap().query_wasm_smart(
+                &gift_addr,
+                &QueryMsg::ReleaseStageState { stage: Uint64::from(1u64) }
+            ).unwrap();
+            println!("STAGE {:?} - RELEASES {:?}", i, info.releases.u64());
+        }
+        let info: StateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::State {}).unwrap();
+        println!("STATE - {:?}", info);
+
     }
 
     #[test]
@@ -70,11 +324,12 @@ mod tests {
             coefficient_up: Default::default(),
             coefficient_down: Default::default(),
             coefficient: Default::default(),
+            treasury: "treasury".to_string()
         };
 
         let env = mock_env();
         let info = mock_info(
-            "owner0000",
+            "owner",
             &[Coin {
                 denom: NATIVE_TOKEN.to_string(),
                 amount: Uint128::new(100),
@@ -84,7 +339,7 @@ mod tests {
 
         // update owner
         let env = mock_env();
-        let info = mock_info("owner0000", &[]);
+        let info = mock_info("owner", &[]);
         let msg = ExecuteMsg::UpdateOwner {
             new_owner: Some("owner0001".to_string()),
         };
@@ -99,22 +354,19 @@ mod tests {
 
         // Unauthorized err
         let env = mock_env();
-        let info = mock_info("owner0000", &[]);
+        let info = mock_info("owner", &[]);
         let msg = ExecuteMsg::UpdateOwner { new_owner: None };
 
         let res = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(res, ContractError::Unauthorized {});
     }
 
-    // TODO write update_passport
-    // TODO write update_target
-
     #[test]
     fn register_merkle_root() {
         let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
-            owner: Some("owner0000".to_string()),
+            owner: Some("owner".to_string()),
             passport: "passport".to_string(),
             target_claim: Uint64::new(4),
             allowed_native: NATIVE_TOKEN.to_string(),
@@ -122,6 +374,7 @@ mod tests {
             coefficient_up: Default::default(),
             coefficient_down: Default::default(),
             coefficient: Default::default(),
+            treasury: "treasury".to_string()
         };
 
         let env = mock_env();
@@ -136,7 +389,7 @@ mod tests {
 
         // register new merkle root
         let env = mock_env();
-        let info = mock_info("owner0000", &[]);
+        let info = mock_info("owner", &[]);
         let msg = ExecuteMsg::RegisterMerkleRoot {
             merkle_root: "634de21cde1044f41d90373733b0f0fb1c1c71f9652b905cdf159e73c4cf0d37"
                 .to_string(),
@@ -162,217 +415,12 @@ mod tests {
         );
     }
 
-    const ETH_TEST: &[u8] =
-        include_bytes!("../testdata/airdrop_stage_1_test_data_ethereum_address.json");
-    const COSMOS_TEST: &[u8] =
-        include_bytes!("../testdata/airdrop_stage_1_test_data_cosmos_address.json");
-
-    #[derive(Deserialize, Debug)]
-    struct Encoded {
-        claim_msg: Binary,
-        signature: Binary,
-        amount: Uint128,
-        root: String,
-        proofs: Vec<String>,
-    }
-
-    #[test]
-    fn claim() {
-        // Case #1 - Claim with Ethereum
-
-        let mut deps = mock_dependencies();
-        let eth_test_data: Encoded = from_slice(ETH_TEST).unwrap();
-
-        let msg = InstantiateMsg {
-            owner: Some("owner0000".to_string()),
-            passport: "passport".to_string(),
-            target_claim: Uint64::new(2),
-            allowed_native: NATIVE_TOKEN.to_string(),
-            initial_balance: Uint128::new(10000000000000),
-            coefficient_up: Uint128::new(20),
-            coefficient_down: Uint128::new(5),
-            coefficient: Uint128::new(20),
-        };
-
-        let env = mock_env();
-        let info = mock_info(
-            "addr0000",
-            &[Coin {
-                denom: NATIVE_TOKEN.to_string(),
-                amount: Uint128::new(10000000000000),
-            }],
-        );
-        let _res = instantiate(deps.as_mut(), env, info, msg).unwrap();
-
-        let env = mock_env();
-        let info = mock_info("owner0000", &[]);
-        let msg = ExecuteMsg::RegisterMerkleRoot {
-            merkle_root: eth_test_data.root,
-        };
-        let _res = execute(deps.as_mut(), env, info, msg).unwrap();
-
-        let claim_msg_ethereum = from_binary(&eth_test_data.claim_msg).unwrap();
-        let msg = ExecuteMsg::Claim {
-            claim_msg: claim_msg_ethereum,
-            signature: eth_test_data.signature,
-            proof: eth_test_data.proofs,
-            claim_amount: eth_test_data.amount,
-        };
-
-        let env = mock_env();
-        let info = mock_info("addr0001", &[]);
-        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
-
-        let claim_msg_ethereum: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
-        let expected = SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
-            to_address: claim_msg_ethereum.clone().target_address,
-            amount: vec![Coin {
-                denom: NATIVE_TOKEN.to_string(),
-                amount: Uint128::new(100000),
-            }],
-        }));
-        assert_eq!(res.messages, vec![expected]);
-
-        assert_eq!(
-            res.attributes,
-            vec![
-                attr("action", "claim"),
-                attr("original", claim_msg_ethereum.clone().gift_claiming_address),
-                attr("type", ClaimerType::Ethereum.to_string()),
-                attr("target", claim_msg_ethereum.clone().target_address),
-                attr("amount", eth_test_data.amount.u128().mul(20).to_string())
-            ]
-        );
-
-        assert!(
-            from_binary::<IsClaimedResponse>(
-                &query(
-                    deps.as_ref(),
-                    env.clone(),
-                    QueryMsg::IsClaimed {
-                        address: claim_msg_ethereum.target_address
-                    }
-                )
-                .unwrap()
-            )
-            .unwrap()
-            .is_claimed
-        );
-
-        let res = execute(deps.as_mut(), env, info, msg).unwrap_err();
-        assert_eq!(res, ContractError::Claimed {});
-
-        // Case #2 - Claim with Cosmos
-
-        let cosmos_test_data: Encoded = from_slice(COSMOS_TEST).unwrap();
-
-        let claim_msg_cosmos: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
-        let msg = ExecuteMsg::Claim {
-            claim_msg: claim_msg_cosmos,
-            signature: cosmos_test_data.signature,
-            proof: cosmos_test_data.proofs,
-            claim_amount: cosmos_test_data.amount,
-        };
-
-        let env = mock_env();
-        let info = mock_info("addr0002", &[]);
-        let res = execute(deps.as_mut(), env, info, msg).unwrap();
-
-        let claim_msg_cosmos: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
-        let expected = SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
-            to_address: claim_msg_cosmos.clone().target_address,
-            amount: vec![Coin {
-                denom: NATIVE_TOKEN.to_string(),
-                amount: Uint128::new(100000),
-            }],
-        }));
-        assert_eq!(res.messages, vec![expected]);
-
-        assert_eq!(
-            res.attributes,
-            vec![
-                attr("action", "claim"),
-                attr("original", claim_msg_cosmos.clone().gift_claiming_address),
-                attr("type", ClaimerType::Cosmos.to_string()),
-                attr("target", claim_msg_cosmos.clone().target_address),
-                attr("amount", cosmos_test_data.amount.u128().mul(20).to_string())
-            ]
-        );
-
-        let env = mock_env();
-        let res = query(deps.as_ref(), env, QueryMsg::Config {}).unwrap();
-        let config: ConfigResponse = from_binary(&res).unwrap();
-        assert_eq!(2, config.claims.u64());
-
-        let claim_msg: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
-        let env = mock_env();
-        let info = mock_info(claim_msg.target_address.as_str(), &[]);
-        let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap();
-        println!("{:?}", res);
-
-        let claim_msg: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
-        let env = mock_env();
-        let info = mock_info(claim_msg.target_address.as_str(), &[]);
-        let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap();
-        println!("{:?}", res);
-
-        let claim_msg: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
-        let env = mock_env();
-        let res = query(
-            deps.as_ref(),
-            env,
-            QueryMsg::ReleaseState {
-                address: claim_msg.target_address,
-            },
-        )
-        .unwrap();
-        let release_state: ReleaseStateResponse = from_binary(&res).unwrap();
-        println!("{:?}", release_state);
-
-        let claim_msg: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
-        let env = mock_env();
-        let res = query(
-            deps.as_ref(),
-            env,
-            QueryMsg::ReleaseState {
-                address: claim_msg.target_address,
-            },
-        )
-        .unwrap();
-        let release_state: ReleaseStateResponse = from_binary(&res).unwrap();
-        println!("{:?}", release_state);
-
-        let claim_msg: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
-        let env = mock_env();
-        let info = mock_info(claim_msg.target_address.as_str(), &[]);
-        let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap_err();
-        println!("{:?}", res);
-
-        let claim_msg: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
-        let env = mock_env();
-        let info = mock_info(claim_msg.target_address.as_str(), &[]);
-        let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap_err();
-        println!("{:?}", res);
-
-        let claim_msg: ClaimMsg = from_binary(&eth_test_data.claim_msg).unwrap();
-        let env = mock_env_time(86400);
-        let info = mock_info(claim_msg.target_address.as_str(), &[]);
-        let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap();
-        println!("{:?}", res);
-
-        let claim_msg: ClaimMsg = from_binary(&cosmos_test_data.claim_msg).unwrap();
-        let env = mock_env_time(86400);
-        let info = mock_info(claim_msg.target_address.as_str(), &[]);
-        let res = execute(deps.as_mut(), env, info, ExecuteMsg::Release {}).unwrap();
-        println!("{:?}", res);
-    }
-
     #[test]
     fn owner_freeze() {
         let mut deps = mock_dependencies();
 
         let msg = InstantiateMsg {
-            owner: Some("owner0000".to_string()),
+            owner: Some("owner".to_string()),
             passport: "passport".to_string(),
             target_claim: Uint64::new(4),
             allowed_native: NATIVE_TOKEN.to_string(),
@@ -380,6 +428,7 @@ mod tests {
             coefficient_up: Uint128::new(20),
             coefficient_down: Uint128::new(5),
             coefficient: Uint128::new(20),
+            treasury: "treasury".to_string()
         };
 
         let env = mock_env();
@@ -394,7 +443,7 @@ mod tests {
 
         // can register merkle root
         let env = mock_env();
-        let info = mock_info("owner0000", &[]);
+        let info = mock_info("owner", &[]);
         let msg = ExecuteMsg::RegisterMerkleRoot {
             merkle_root: "5d4f48f147cb6cb742b376dce5626b2a036f69faec10cd73631c791780e150fc"
                 .to_string(),
@@ -403,7 +452,7 @@ mod tests {
 
         // can update owner
         let env = mock_env();
-        let info = mock_info("owner0000", &[]);
+        let info = mock_info("owner", &[]);
         let msg = ExecuteMsg::UpdateOwner {
             new_owner: Some("owner0001".to_string()),
         };

@@ -12,7 +12,6 @@
           "type": "object",
           "properties": {
             "new_owner": {
-              "description": "NewOwner if non sent, contract gets locked. Recipients can receive airdrops but owner cannot register new stages.",
               "type": [
                 "string",
                 "null"
@@ -24,7 +23,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Allows to easily debug",
       "type": "object",
       "required": [
         "update_passport_addr"
@@ -37,6 +35,26 @@
           ],
           "properties": {
             "new_passport_addr": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_treasury_addr"
+      ],
+      "properties": {
+        "update_treasury_addr": {
+          "type": "object",
+          "required": [
+            "new_treasury_addr"
+          ],
+          "properties": {
+            "new_treasury_addr": {
               "type": "string"
             }
           }
@@ -86,7 +104,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Claim does not check if contract has enough funds, owner must ensure it.",
       "type": "object",
       "required": [
         "claim"

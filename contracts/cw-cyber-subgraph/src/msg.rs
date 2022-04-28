@@ -2,10 +2,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use cyber_std::Link;
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub owner: String,
-    pub executer: String,
+    pub admins: Vec<String>,
+    pub executers: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -14,11 +14,11 @@ pub enum ExecuteMsg {
     Cyberlink {
         links: Vec<Link>
     },
-    UpdateOwner {
-        new_owner: String
+    UpdateAdmins {
+        new_admins: Vec<String>
     },
-    UpdateExecuter {
-        new_executer: String
+    UpdateExecutors {
+        new_executors: Vec<String>
     },
 }
 

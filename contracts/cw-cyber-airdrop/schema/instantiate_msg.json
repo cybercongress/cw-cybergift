@@ -9,7 +9,8 @@
     "coefficient_up",
     "initial_balance",
     "passport",
-    "target_claim"
+    "target_claim",
+    "treasury"
   ],
   "properties": {
     "allowed_native": {
@@ -28,7 +29,6 @@
       "$ref": "#/definitions/Uint128"
     },
     "owner": {
-      "description": "Owner if none set to info.sender.",
       "type": [
         "string",
         "null"
@@ -39,6 +39,9 @@
     },
     "target_claim": {
       "$ref": "#/definitions/Uint64"
+    },
+    "treasury": {
+      "type": "string"
     }
   },
   "definitions": {

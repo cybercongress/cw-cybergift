@@ -77,6 +77,30 @@
     {
       "type": "object",
       "required": [
+        "update_data"
+      ],
+      "properties": {
+        "update_data": {
+          "type": "object",
+          "required": [
+            "data",
+            "nickname"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "nickname": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "proof_address"
       ],
       "properties": {
@@ -207,6 +231,36 @@
               "type": "string"
             },
             "proof_subspace": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "set_address_label"
+      ],
+      "properties": {
+        "set_address_label": {
+          "type": "object",
+          "required": [
+            "address",
+            "nickname"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            },
+            "label": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "nickname": {
               "type": "string"
             }
           }
@@ -466,6 +520,23 @@
         }
       ]
     },
+    "LabeledAddress": {
+      "type": "object",
+      "required": [
+        "address"
+      ],
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "MintMsg_for_PassportMetadata": {
       "type": "object",
       "required": [
@@ -512,11 +583,17 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/LabeledAddress"
           }
         },
         "avatar": {
           "type": "string"
+        },
+        "data": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "nickname": {
           "type": "string"

@@ -2,7 +2,7 @@ use std::convert::TryInto;
 use std::ops::Add;
 
 use bech32::{ToBase32, Variant};
-use cosmwasm_std::{Addr, Binary, Deps, from_binary, StdError, StdResult};
+use cosmwasm_std::{Addr, Binary, Deps, from_binary, ReplyOn, StdError, StdResult, SubMsg, to_binary, WasmMsg};
 use primitive_types::H256;
 use ripemd160::Digest as Ripemd160Digest;
 use ripemd160::Ripemd160;
@@ -10,8 +10,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use sha3::Keccak256;
-
+use cyber_std::{CyberMsgWrapper, Link};
+use cw_cyber_subgraph::msg::{ExecuteMsg as SubgraphExecuteMsg};
 use crate::error::ContractError;
+use crate::execute::CYBERSPACE_ID_MSG;
 
 pub fn proof_address_ethereum(
     deps: Deps,
@@ -23,7 +25,6 @@ pub fn proof_address_ethereum(
     let mut hasher = Keccak256::new();
 
     let msg = passport_owner.add(":").add(&message);
-    // TODO add address:particle as sign message, where address is passport holder address
     hasher.update(format!("\x19Ethereum Signed Message:\n{}", msg.len()));
     hasher.update(msg);
     let hash = hasher.finalize();
@@ -58,9 +59,12 @@ pub fn proof_address_ethereum(
 
 fn get_recovery_param(v: u8) -> StdResult<u8> {
     match v {
+        // 0 and 1 added to support ledger
+        0 => Ok(0),
+        1 => Ok(1),
         27 => Ok(0),
         28 => Ok(1),
-        _ => Err(StdError::generic_err("Values of v other than 27 and 28 not supported. Replay protection (EIP-155) cannot be used here."))
+        _ => Err(StdError::generic_err("Values of v other than 0, 1, 27 and 28 not supported"))
     }
 }
 
@@ -118,7 +122,7 @@ pub fn proof_address_cosmos(
     message: String,
     signature: Binary,
 ) -> Result<bool, ContractError> {
-    // TODO clean up before release
+    // ADR-36 signed object, need to construct this object part by part and add encoded signed data with signer
     // let obj = json!(
     //     {
     //         "account_number":"0",
@@ -169,7 +173,7 @@ pub fn proof_address_cosmos(
 }
 
 /// Converts user pubkey into Addr with given prefix
-fn pub_key_to_address(deps: &Deps, pub_key: &[u8], prefix: &str) -> StdResult<Addr> {
+fn pub_key_to_address(_deps: &Deps, pub_key: &[u8], prefix: &str) -> StdResult<Addr> {
     let compressed_pub_key = to_compressed_pub_key(pub_key)?;
     let mut ripemd160_hasher = Ripemd160::new();
     ripemd160_hasher.update(Sha256::digest(&compressed_pub_key));
@@ -213,4 +217,22 @@ fn to_compressed_pub_key(pub_key: &[u8]) -> StdResult<Vec<u8>> {
 pub struct CosmosSignature {
     pub_key: Binary,
     signature: Binary,
+}
+
+pub fn prepare_cyberlink_submsg(
+    contract_addr: String,
+    links: Vec<Link>
+) -> SubMsg<CyberMsgWrapper> {
+    return SubMsg {
+        id: CYBERSPACE_ID_MSG,
+        msg: WasmMsg::Execute {
+            contract_addr,
+            msg: to_binary(&SubgraphExecuteMsg::Cyberlink {
+                links
+            }).unwrap(),
+            funds: vec![],
+        }.into(),
+        gas_limit: None,
+        reply_on: ReplyOn::Error
+    }
 }

@@ -28,17 +28,20 @@
     {
       "type": "object",
       "required": [
-        "update_owner"
+        "update_admins"
       ],
       "properties": {
-        "update_owner": {
+        "update_admins": {
           "type": "object",
           "required": [
-            "new_owner"
+            "new_admins"
           ],
           "properties": {
-            "new_owner": {
-              "type": "string"
+            "new_admins": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }
@@ -48,17 +51,20 @@
     {
       "type": "object",
       "required": [
-        "update_executer"
+        "update_executors"
       ],
       "properties": {
-        "update_executer": {
+        "update_executors": {
           "type": "object",
           "required": [
-            "new_executer"
+            "new_executors"
           ],
           "properties": {
-            "new_executer": {
-              "type": "string"
+            "new_executors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }

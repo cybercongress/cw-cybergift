@@ -22,6 +22,12 @@ pub struct AddressPortID {
     pub portid: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct LabeledAddress {
+    pub label: Option<String>,
+    pub address: String,
+}
+
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const PORTID: Item<u64> = Item::new("portid");
 
@@ -31,7 +37,8 @@ pub const NICKNAMES: Map<&str, AddressPortID> = Map::new("nicknames");
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 #[serde(rename_all = "snake_case")]
 pub struct PassportMetadata {
-    pub addresses: Option<Vec<String>>,
+    pub addresses: Option<Vec<LabeledAddress>>,
     pub avatar: String,
     pub nickname: String,
+    pub data: Option<String>,
 }

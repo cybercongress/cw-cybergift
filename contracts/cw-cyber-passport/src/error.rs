@@ -4,6 +4,7 @@ use std::backtrace::Backtrace;
 use cosmwasm_std::{RecoverPubkeyError, StdError};
 use cw721_base::ContractError as CW721ContractError;
 use thiserror::Error;
+use cyber_std::particle::ParticleError;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
@@ -22,12 +23,18 @@ pub enum ContractError {
     #[error("Approval not found for: {spender}")]
     ApprovalNotFound { spender: String },
 
+    #[error("Address not found")]
+    AddressNotFound {},
+
     // -----
 
     #[error("Got a submessage reply with unknown id: {id}")]
     UnknownReplyId { id: u64 },
 
     // -----
+
+    #[error("Invalid data for the particle")]
+    InvalidParticleData {},
 
     #[error("Invalid particle")]
     InvalidParticle {},
@@ -40,6 +47,12 @@ pub enum ContractError {
 
     #[error("Wrong amount for the name")]
     WrongAmountForName {},
+
+    #[error("Name is not valid")]
+    NotValidName {},
+
+    #[error("Data is not valid")]
+    NotValidData {},
 
     #[error("Nickname already exists")]
     NicknameAlreadyExists {},
@@ -54,6 +67,7 @@ pub enum ContractError {
     IsNotEligible { msg: String },
 
     // -----
+    // TODO check this overwrites of error messages
 
     #[error("Invalid hash format")]
     InvalidHashFormat,
@@ -71,6 +85,16 @@ pub enum ContractError {
         #[cfg(feature = "backtraces")]
         backtrace: Backtrace,
     },
+}
+
+impl From<ParticleError> for ContractError {
+    fn from(msg: ParticleError) -> ContractError {
+        match msg {
+            ParticleError::InvalidParticleData {} => ContractError::InvalidParticleData {},
+            ParticleError::InvalidParticle {} => ContractError::InvalidParticle {},
+            ParticleError::InvalidParticleVersion {} => ContractError::InvalidParticleVersion {}
+        }
+    }
 }
 
 impl From<CW721ContractError> for ContractError {
