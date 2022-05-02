@@ -53,7 +53,7 @@ if __name__ == '__main__':
     log_file = f'temp/contract_release_execution_log_{index_number}.txt' \
         if release_bool else f'temp/contract_participation_execution_log_{index_number}.txt'
     address_dict = {gift_contract_address: 'Gift Contract',
-                    'bostrom1hulx7cgvpfcvg83wk5h96sedqgn72n026w6nl47uht554xhvj9nsjxcwgf': 'Passport Contract'}
+                    'bostrom18v47nqmhvejx3vc498pantg8vr435xa0rt6x0m6kzhp6yuqmcp8syatwkd': 'Passport Contract'}
 
     row = pd.read_csv(source_file_name).iloc[int(index_number) % 10_000]
     row['ethereum_proof'] = row['ethereum_proof'].replace('\'', '').replace('[', '').replace(']', '').split(', ')
