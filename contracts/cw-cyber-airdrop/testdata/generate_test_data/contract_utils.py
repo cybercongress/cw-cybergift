@@ -209,7 +209,7 @@ class ContractUtils:
                           "gift_amount": str(claim_row['amount']), "proof": claim_row[network + "_proof"]}},
             contract_address=self.name_dict['Gift Contract'],
             mnemonic=claim_row['cosmos_seed'],
-            gas=400000,
+            gas=500000,
             display_data=display_data)
 
     def release(self, claim_row: pd.Series, network: str = 'ethereum', display_data: bool = False):
