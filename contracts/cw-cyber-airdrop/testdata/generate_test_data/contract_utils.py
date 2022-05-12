@@ -238,6 +238,30 @@ class ContractUtils:
             gas=400000,
             display_data=display_data)
 
+    def update_name(self, claim_row: pd.Series, new_nickname: str, display_data: bool = False):
+        return self.execute_contract(
+            execute_msg={'update_name': {'new_nickname': new_nickname, 'old_nickname': claim_row['nickname']}},
+            contract_address=self.name_dict['Passport Contract'],
+            mnemonic=claim_row['cosmos_seed'],
+            gas=500000,
+            display_data=display_data)
+
+    def update_avatar(self, claim_row: pd.Series, new_avatar: str, display_data: bool = False):
+        return self.execute_contract(
+            execute_msg={'update_avatar': {'new_avatar': new_avatar, 'nickname': claim_row['nickname']}},
+            contract_address=self.name_dict['Passport Contract'],
+            mnemonic=claim_row['cosmos_seed'],
+            gas=500000,
+            display_data=display_data)
+
+    def remove_address(self, claim_row: pd.Series, removed_address: str, display_data: bool = False):
+        return self.execute_contract(
+            execute_msg={'remove_address': {'address': removed_address, 'nickname': claim_row['nickname']}},
+            contract_address=self.name_dict['Passport Contract'],
+            mnemonic=claim_row['cosmos_seed'],
+            gas=500000,
+            display_data=display_data)
+
     def get_contract_name(self, contract_address: str) -> str:
         try:
             return self.address_dict[contract_address]
