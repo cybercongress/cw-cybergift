@@ -1,7 +1,15 @@
 [workspace]
-members = ["contracts/cw-cyber-subgraph", "contracts/cw-cyber-passport", "contracts/cw-cyber-airdrop"]
+members = ["contracts/*"]
 
-[profile.release.package.cw-cybergift]
+[profile.release.package.cw-cyber-airdrop]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.cw-cyber-passport]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.cw-cyber-subgraph]
 codegen-units = 1
 incremental = false
 

@@ -1,15 +1,20 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Reply, StdResult, to_binary};
+use cosmwasm_std::{attr, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, StdResult, to_binary};
+use cw2::{get_contract_version, set_contract_version};
 use cyber_std::CyberMsgWrapper;
+use semver::Version;
 
 use crate::error::ContractError;
-use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_set_subspaces, execute_transfer_nft, execute_update_avatar, execute_update_name, try_migrate, CYBERSPACE_ID_MSG, execute_set_address_label, execute_update_data};
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_set_subgraphs, execute_transfer_nft, execute_update_avatar, execute_update_name, CYBERSPACE_ID_MSG, execute_set_address_label, execute_update_data};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::{query_active_passport, query_address_by_nickname, query_config, query_metadata_by_nickname, query_passort_signed, query_passport_by_nickname, query_portid};
 use crate::state::{Config, CONFIG, PassportContract, PORTID};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
+
+const CONTRACT_NAME: &str = "cw-cyber-passport";
+const CONTRACT_VERSION: &str = "1.0.0";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -18,11 +23,13 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     let config = Config {
         owner: deps.api.addr_validate(&msg.clone().owner)?,
-        name_subspace: deps.api.addr_validate(&msg.clone().name_subspace)?,
-        avatar_subspace: deps.api.addr_validate(&msg.clone().avatar_subspace)?,
-        proof_subspace: deps.api.addr_validate(&msg.clone().proof_subspace)?
+        name_subgraph: deps.api.addr_validate(&msg.clone().name_subgraph)?,
+        avatar_subgraph: deps.api.addr_validate(&msg.clone().avatar_subgraph)?,
+        proof_subgraph: deps.api.addr_validate(&msg.clone().proof_subgraph)?
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -48,11 +55,11 @@ pub fn execute(
         ExecuteMsg::SetMinter { minter } => execute_set_minter(deps, env, info, minter),
         ExecuteMsg::SetOwner { owner } => execute_set_owner(deps, env, info, owner),
         ExecuteMsg::SetActive { token_id } => execute_set_active(deps, env, info, token_id),
-        ExecuteMsg::SetSubspaces {
-            name_subspace,
-            avatar_subspace,
-            proof_subspace
-        } => execute_set_subspaces(deps, env, info, name_subspace, avatar_subspace, proof_subspace),
+        ExecuteMsg::SetSubgraphs {
+            name_subgraph,
+            avatar_subgraph,
+            proof_subgraph
+        } => execute_set_subgraphs(deps, env, info, name_subgraph, avatar_subgraph, proof_subgraph),
         ExecuteMsg::SetAddressLabel {
             nickname,
             address,
@@ -94,14 +101,31 @@ pub fn reply(_deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contra
     Ok(Response::new())
 }
 
-// TODO test migrate
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _env: Env,
-    msg: MigrateMsg,
+    _msg: Empty,
 ) -> Result<Response, ContractError> {
-    match msg {
-        MigrateMsg { version, config } => try_migrate(deps, version, config),
+    let stored = get_contract_version(deps.storage)?;
+    if stored.contract != CONTRACT_NAME {
+        return Err(ContractError::CannotMigrate {
+            previous_contract: stored.contract,
+        });
     }
+
+    let version: Version = CONTRACT_VERSION.parse()?;
+    let storage_version: Version = get_contract_version(deps.storage)?.version.parse()?;
+
+    if storage_version > version {
+        return Err(ContractError::CannotMigrateVersion {
+            previous_version: stored.version,
+        });
+    }
+
+    if storage_version < version {
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    }
+
+    Ok(Response::new())
 }

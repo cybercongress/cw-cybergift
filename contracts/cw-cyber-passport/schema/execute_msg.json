@@ -213,24 +213,24 @@
     {
       "type": "object",
       "required": [
-        "set_subspaces"
+        "set_subgraphs"
       ],
       "properties": {
-        "set_subspaces": {
+        "set_subgraphs": {
           "type": "object",
           "required": [
-            "avatar_subspace",
-            "name_subspace",
-            "proof_subspace"
+            "avatar_subgraph",
+            "name_subgraph",
+            "proof_subgraph"
           ],
           "properties": {
-            "avatar_subspace": {
+            "avatar_subgraph": {
               "type": "string"
             },
-            "name_subspace": {
+            "name_subgraph": {
               "type": "string"
             },
-            "proof_subspace": {
+            "proof_subgraph": {
               "type": "string"
             }
           }

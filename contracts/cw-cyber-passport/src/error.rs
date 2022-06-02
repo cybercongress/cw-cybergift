@@ -26,6 +26,15 @@ pub enum ContractError {
     #[error("Address not found")]
     AddressNotFound {},
 
+    #[error("Cannot migrate from different contract type: {previous_contract}")]
+    CannotMigrate { previous_contract: String },
+
+    #[error("Cannot migrate from unsupported version: {previous_version}")]
+    CannotMigrateVersion { previous_version: String },
+
+    #[error("Semver parsing error: {0}")]
+    SemVer(String),
+
     // -----
 
     #[error("Got a submessage reply with unknown id: {id}")]
@@ -50,6 +59,9 @@ pub enum ContractError {
 
     #[error("Name is not valid")]
     NotValidName {},
+
+    #[error("Label is not valid")]
+    NotValidLabel {},
 
     #[error("Data is not valid")]
     NotValidData {},
@@ -123,5 +135,11 @@ impl From<RecoverPubkeyError> for ContractError {
                 backtrace
             },
         }
+    }
+}
+
+impl From<semver::Error> for ContractError {
+    fn from(err: semver::Error) -> Self {
+        Self::SemVer(err.to_string())
     }
 }

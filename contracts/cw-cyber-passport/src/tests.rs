@@ -16,9 +16,9 @@ mod tests {
         let owner = "owner";
         let minter = "cosmos2contract";
         let citizen = "bostrom1wnpak7sfawsfv9c8vqe7naxfa4g99lv77d7c0z";
-        let name_subspace = "name_subspace";
-        let avatar_subspace = "avatar_subspace";
-        let proof_subspace = "proof_subspace";
+        let name_subgraph = "name_subgraph";
+        let avatar_subgraph = "avatar_subgraph";
+        let proof_subgraph = "proof_subgraph";
 
         // instantiate the contract
         let instantiate_msg = InstantiateMsg {
@@ -26,18 +26,18 @@ mod tests {
             symbol: "MP".to_string(),
             minter: minter.to_string(),
             owner: owner.to_string(),
-            name_subspace: name_subspace.to_string(),
-            avatar_subspace: avatar_subspace.to_string(),
-            proof_subspace: proof_subspace.to_string(),
+            name_subgraph: name_subgraph.to_string(),
+            avatar_subgraph: avatar_subgraph.to_string(),
+            proof_subgraph: proof_subgraph.to_string(),
         };
         let info = mock_info(&owner, &[]);
         instantiate(deps.as_mut(), mock_env(), info, instantiate_msg).unwrap();
 
         let expected_config = ConfigResponse {
             owner: owner.to_string(),
-            name_subspace: name_subspace.to_string(),
-            avatar_subspace: avatar_subspace.to_string(),
-            proof_subspace: proof_subspace.to_string(),
+            name_subgraph: name_subgraph.to_string(),
+            avatar_subgraph: avatar_subgraph.to_string(),
+            proof_subgraph: proof_subgraph.to_string(),
         };
         assert_eq!(query_config(deps.as_ref()).unwrap(), expected_config);
 

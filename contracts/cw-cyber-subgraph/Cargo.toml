@@ -8,6 +8,7 @@ exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "contract.wasm",
   "hash.txt",
+  "artifacts/*",
 ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -57,3 +58,4 @@ sha3 = "0.9"
 serde_json = "1.0"
 cosmwasm-schema = "1.0.0-beta8"
 base64 = "0.13"
+semver = "1"

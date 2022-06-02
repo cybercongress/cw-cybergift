@@ -3,16 +3,16 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "avatar_subspace",
+    "avatar_subgraph",
     "minter",
     "name",
-    "name_subspace",
+    "name_subgraph",
     "owner",
-    "proof_subspace",
+    "proof_subgraph",
     "symbol"
   ],
   "properties": {
-    "avatar_subspace": {
+    "avatar_subgraph": {
       "type": "string"
     },
     "minter": {
@@ -23,13 +23,13 @@
       "description": "Name of the NFT contract",
       "type": "string"
     },
-    "name_subspace": {
+    "name_subgraph": {
       "type": "string"
     },
     "owner": {
       "type": "string"
     },
-    "proof_subspace": {
+    "proof_subgraph": {
       "type": "string"
     },
     "symbol": {

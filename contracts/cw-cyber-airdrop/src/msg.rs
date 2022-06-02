@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{Decimal, Uint128, Uint64};
 use cw_utils::Expiration;
-use crate::state::{Config, State};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -119,11 +118,4 @@ pub struct SignatureResponse {
 #[serde(rename_all = "snake_case")]
 pub struct AddressResponse {
     pub address: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {
-    pub version: String,
-    pub config: Option<Config>,
-    pub state: Option<State>,
 }
