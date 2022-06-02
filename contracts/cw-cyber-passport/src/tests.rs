@@ -64,6 +64,7 @@ mod tests {
             avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
             addresses: None,
             data: None,
+            particle: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname".into()).unwrap(), expected_passport_metadata);
 
@@ -76,6 +77,7 @@ mod tests {
                 avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
                 addresses: None,
                 data: None,
+                particle: None,
             }
         };
         assert_eq!(query_passport_by_nickname(deps.as_ref(), "test_nickname".into()).unwrap(), expected_passport);
@@ -97,6 +99,7 @@ mod tests {
             avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
             addresses: None,
             data: None,
+            particle: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
 
@@ -115,6 +118,7 @@ mod tests {
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
             addresses: None,
             data: None,
+            particle: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
 
@@ -134,6 +138,7 @@ mod tests {
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
             addresses: Option::from(vec![LabeledAddress{ label: None, address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string() }]),
             data: None,
+            particle: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
 
@@ -153,6 +158,7 @@ mod tests {
                 LabeledAddress{ label: None, address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string() }
             ]),
             data: None,
+            particle: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
 
@@ -195,6 +201,7 @@ mod tests {
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
             addresses: Option::from(vec![LabeledAddress{ label: None, address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string() }]),
             data: None,
+            particle: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
 
@@ -211,6 +218,7 @@ mod tests {
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
             addresses: None,
             data: None,
+            particle: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "test_nickname_new".into()).unwrap(), expected_passport_metadata);
 
@@ -230,6 +238,7 @@ mod tests {
             avatar: "QmWfy5AzuaTLh4CtPcymE85KgBR36FNfokMmoGqYJoLALt".to_string(),
             addresses: None,
             data: None,
+            particle: None,
         };
         assert_eq!(query_metadata_by_nickname(deps.as_ref(), "name".into()).unwrap(), expected_passport_metadata);
     }

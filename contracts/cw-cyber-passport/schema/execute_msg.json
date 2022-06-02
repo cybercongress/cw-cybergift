@@ -83,15 +83,43 @@
         "update_data": {
           "type": "object",
           "required": [
-            "data",
             "nickname"
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "nickname": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_particle"
+      ],
+      "properties": {
+        "update_particle": {
+          "type": "object",
+          "required": [
+            "nickname"
+          ],
+          "properties": {
+            "nickname": {
+              "type": "string"
+            },
+            "particle": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         }
@@ -597,6 +625,12 @@
         },
         "nickname": {
           "type": "string"
+        },
+        "particle": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },

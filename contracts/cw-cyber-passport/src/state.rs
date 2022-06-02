@@ -41,4 +41,5 @@ pub struct PassportMetadata {
     pub avatar: String,
     pub nickname: String,
     pub data: Option<String>,
+    pub particle: Option<String>
 }

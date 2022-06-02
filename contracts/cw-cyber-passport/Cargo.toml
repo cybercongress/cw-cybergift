@@ -1,6 +1,6 @@
 [package]
 name = "cw-cyber-passport"
-version = "0.0.1"
+version = "1.0.0"
 authors = ["CyberHead"]
 edition = "2018"
 
@@ -41,8 +41,8 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
-cosmwasm-std = { version = "1.0.0-beta8" }
-cosmwasm-storage = { version = "1.0.0-beta8" }
+cosmwasm-std = { version = "1.0.0" }
+cosmwasm-storage = { version = "1.0.0" }
 cw-storage-plus = "0.13.2"
 cw2 = "0.13.2"
 cw721 = { version = "0.13.2" }
@@ -50,7 +50,7 @@ schemars = "0.8.3"
 serde = { version = "1.0.127", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.26" }
 cid = "0.7.0"
-cyber-std = { version = "0.2.0" }
+cyber-std = { version = "0.2.1" }
 cw-cyber-subgraph = { path = "../cw-cyber-subgraph" }
 cw-utils = { version = "0.13.2" }
 hex = "0.4"
@@ -64,5 +64,5 @@ base64 = "0.13"
 semver = "1"
 
 [dev-dependencies]
-cosmwasm-schema = { version = "1.0.0-beta8" }
+cosmwasm-schema = { version = "1.0.0" }
 

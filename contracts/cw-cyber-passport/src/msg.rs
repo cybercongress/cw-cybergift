@@ -61,7 +61,11 @@ pub enum ExecuteMsg {
     },
     UpdateData{
         nickname: String,
-        data: String,
+        data: Option<String>,
+    },
+    UpdateParticle{
+        nickname: String,
+        particle: Option<String>,
     },
     ProofAddress{
         nickname: String,

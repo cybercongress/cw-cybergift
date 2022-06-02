@@ -6,7 +6,7 @@ use cyber_std::CyberMsgWrapper;
 use semver::Version;
 
 use crate::error::ContractError;
-use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_set_subgraphs, execute_transfer_nft, execute_update_avatar, execute_update_name, CYBERSPACE_ID_MSG, execute_set_address_label, execute_update_data};
+use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_minter, execute_set_owner, execute_set_subgraphs, execute_transfer_nft, execute_update_avatar, execute_update_name, CYBERSPACE_ID_MSG, execute_set_address_label, execute_update_data, execute_update_particle};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::{query_active_passport, query_address_by_nickname, query_config, query_metadata_by_nickname, query_passort_signed, query_passport_by_nickname, query_portid};
 use crate::state::{Config, CONFIG, PassportContract, PORTID};
@@ -50,6 +50,7 @@ pub fn execute(
         ExecuteMsg::UpdateName { old_nickname, new_nickname} => execute_update_name(deps, env, info, old_nickname, new_nickname),
         ExecuteMsg::UpdateAvatar { nickname, new_avatar} => execute_update_avatar(deps, env, info, nickname, new_avatar),
         ExecuteMsg::UpdateData { nickname, data} => execute_update_data(deps, env, info, nickname, data),
+        ExecuteMsg::UpdateParticle { nickname, particle} => execute_update_particle(deps, env, info, nickname, particle),
         ExecuteMsg::ProofAddress { nickname, address, signature } => execute_proof_address(deps, env, info, nickname, address, signature),
         ExecuteMsg::RemoveAddress {nickname, address } => execute_remove_address(deps, env, info, nickname, address),
         ExecuteMsg::SetMinter { minter } => execute_set_minter(deps, env, info, minter),

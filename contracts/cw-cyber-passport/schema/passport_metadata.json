@@ -27,6 +27,12 @@
     },
     "nickname": {
       "type": "string"
+    },
+    "particle": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "definitions": {
