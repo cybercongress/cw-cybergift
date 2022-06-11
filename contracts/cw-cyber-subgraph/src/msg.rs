@@ -27,6 +27,3 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     Config {},
 }
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}

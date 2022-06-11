@@ -1,6 +1,6 @@
 [package]
 name = "cw-cyber-airdrop"
-version = "0.0.1"
+version = "1.0.0"
 authors = ["CyberHead"]
 edition = "2018"
 
@@ -8,6 +8,7 @@ exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "contract.wasm",
   "hash.txt",
+  "artifacts/*",
 ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -45,7 +46,7 @@ cw0 = "0.10.3"
 cw2 = "0.13.2"
 cw20 = "0.13.2"
 cw1-subkeys = "0.13.2"
-cosmwasm-std = { version = "1.0.0-beta8" }
+cosmwasm-std = { version = "1.0.0" }
 cw-utils = { version = "0.13.2" }
 cw-cyber-passport = { path = "../cw-cyber-passport", features = ["library"] }
 cw-cyber-subgraph = { path = "../cw-cyber-subgraph", features = ["library"] }
@@ -58,10 +59,11 @@ sha2 = { version = "0.9.5", default-features = false }
 sha3 = "0.9"
 serde_json = "1.0"
 base64 = "0.13"
+semver = "1"
 
 [dev-dependencies]
-cosmwasm-schema = { version = "1.0.0-beta8" }
+cosmwasm-schema = { version = "1.0.0" }
 cw-multi-test = { version = "0.13.2" }
 cw1-whitelist = { version = "0.13.2" }
-cyber-std = { version = "0.2.0" }
-cyber-std-test = { version = "0.2.0" }
+cyber-std = { version = "0.2.1" }
+cyber-std-test = { version = "0.2.1" }

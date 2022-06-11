@@ -7,9 +7,9 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
     Ok(ConfigResponse {
         owner: cfg.owner.into(),
-        name_subspace: cfg.name_subspace.into(),
-        avatar_subspace: cfg.avatar_subspace.into(),
-        proof_subspace: cfg.proof_subspace.into(),
+        name_subgraph: cfg.name_subgraph.into(),
+        avatar_subgraph: cfg.avatar_subgraph.into(),
+        proof_subgraph: cfg.proof_subgraph.into(),
     })
 }
 

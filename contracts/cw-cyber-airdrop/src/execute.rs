@@ -2,13 +2,12 @@ use cosmwasm_std::{Addr, attr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty
 
 use crate::error::ContractError;
 use crate::helpers::{update_coefficient, verify_merkle_proof};
-use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE, ClaimState, STATE, RELEASE_INFO, Config, State};
+use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE, ClaimState, STATE, RELEASE_INFO};
 use cw_utils::{Expiration, DAY, HOUR};
 use std::ops::{Add, Mul};
 use cw_cyber_passport::msg::{QueryMsg as PassportQueryMsg};
 use crate::msg::{AddressResponse, SignatureResponse};
 use cw1_subkeys::msg::{ExecuteMsg as Cw1ExecuteMsg};
-use cw2::{get_contract_version, set_contract_version};
 
 const RELEASE_STAGES: u64 = 9;
 
@@ -197,8 +196,8 @@ pub fn execute_claim(
 
     let release_state = ReleaseState {
         address: Addr::unchecked(res.clone().address),
-        // balance_claim: claim_amount.checked_sub(Uint128::new(CLAIM_BOUNTY))?,
-        balance_claim: claim_amount.checked_sub(Uint128::new(0))?,
+        balance_claim: claim_amount.checked_sub(Uint128::new(CLAIM_BOUNTY))?,
+        // balance_claim: claim_amount.checked_sub(Uint128::new(0))?,
         stage: Uint64::zero(),
         stage_expiration: Expiration::Never {},
     };
@@ -216,20 +215,20 @@ pub fn execute_claim(
 
     // send funds from treasury controlled by Congress
     Ok(Response::new()
-       // .add_message(WasmMsg::Execute {
-       //     contract_addr: config.treasury_addr.to_string(),
-       //     msg: to_binary(&Cw1ExecuteMsg::Execute::<Empty> {
-       //         msgs: vec![
-       //             CosmosMsg::Bank(BankMsg::Send {
-       //                 to_address: res.address.clone(),
-       //                 amount: vec![Coin {
-       //                     denom: config.allowed_native,
-       //                     amount: Uint128::new(CLAIM_BOUNTY),
-       //                 }],
-       //             }).into()
-       //         ]})?,
-       //     funds: vec![]
-       // })
+       .add_message(WasmMsg::Execute {
+           contract_addr: config.treasury_addr.to_string(),
+           msg: to_binary(&Cw1ExecuteMsg::Execute::<Empty> {
+               msgs: vec![
+                   CosmosMsg::Bank(BankMsg::Send {
+                       to_address: res.address.clone(),
+                       amount: vec![Coin {
+                           denom: config.allowed_native,
+                           amount: Uint128::new(CLAIM_BOUNTY),
+                       }],
+                   }).into()
+               ]})?,
+           funds: vec![]
+       })
        //  .add_message(BankMsg::Send {
        //      to_address: res.address.clone(),
        //      amount: vec![Coin {
@@ -352,26 +351,4 @@ pub fn execute_release(
            attr("amount", amount),
        ])
     )
-}
-
-pub fn try_migrate(
-    deps: DepsMut,
-    version: String,
-    config: Option<Config>,
-    state: Option<State>,
-) -> Result<Response, ContractError> {
-    let contract_version = get_contract_version(deps.storage)?;
-    set_contract_version(deps.storage, contract_version.contract, version)?;
-
-    if config.is_some() {
-        CONFIG.save(deps.storage, &config.unwrap())?
-    }
-    if state.is_some() {
-        STATE.save(deps.storage, &state.unwrap())?
-    }
-
-    Ok(Response::new().add_attributes(vec![
-        attr("method", "try_migrate"),
-        attr("version", contract_version.version),
-    ]))
 }

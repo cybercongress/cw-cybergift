@@ -27,9 +27,9 @@ pub struct InstantiateMsg {
 
     pub owner: String,
 
-    pub name_subspace: String,
-    pub avatar_subspace: String,
-    pub proof_subspace: String,
+    pub name_subgraph: String,
+    pub avatar_subgraph: String,
+    pub proof_subgraph: String,
 }
 
 impl From<InstantiateMsg> for CW721InstantiateMsg {
@@ -61,7 +61,11 @@ pub enum ExecuteMsg {
     },
     UpdateData{
         nickname: String,
-        data: String,
+        data: Option<String>,
+    },
+    UpdateParticle{
+        nickname: String,
+        particle: Option<String>,
     },
     ProofAddress{
         nickname: String,
@@ -75,10 +79,10 @@ pub enum ExecuteMsg {
     SetMinter { minter: String },
     SetOwner { owner: String },
     SetActive { token_id: String },
-    SetSubspaces {
-        name_subspace: String,
-        avatar_subspace: String,
-        proof_subspace: String,
+    SetSubgraphs {
+        name_subgraph: String,
+        avatar_subgraph: String,
+        proof_subgraph: String,
     },
     SetAddressLabel {
         nickname: String,
@@ -283,9 +287,9 @@ impl From<QueryMsg> for CW721QueryMsg {
 #[serde(rename_all = "snake_case")]
 pub struct ConfigResponse {
     pub owner: String,
-    pub name_subspace: String,
-    pub avatar_subspace: String,
-    pub proof_subspace: String,
+    pub name_subgraph: String,
+    pub avatar_subgraph: String,
+    pub proof_subgraph: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -304,13 +308,6 @@ pub struct AddressResponse {
 #[serde(rename_all = "snake_case")]
 pub struct SignatureResponse {
     pub signed: bool,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-#[serde(rename_all = "snake_case")]
-pub struct MigrateMsg {
-    pub version: String,
-    pub config: Option<Config>,
 }
 
 

@@ -11,9 +11,9 @@ pub type Extension = PassportMetadata;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub owner: Addr,
-    pub name_subspace: Addr,
-    pub avatar_subspace: Addr,
-    pub proof_subspace: Addr,
+    pub name_subgraph: Addr,
+    pub avatar_subgraph: Addr,
+    pub proof_subgraph: Addr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -41,4 +41,5 @@ pub struct PassportMetadata {
     pub avatar: String,
     pub nickname: String,
     pub data: Option<String>,
+    pub particle: Option<String>
 }

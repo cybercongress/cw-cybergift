@@ -106,9 +106,9 @@ mod tests {
             symbol: "MP".to_string(),
             minter: "cosmos2contract".to_string(),
             owner: OWNER.to_string(),
-            name_subspace: SPACE1.to_string(),
-            avatar_subspace: SPACE2.to_string(),
-            proof_subspace: SPACE3.to_string(),
+            name_subgraph: SPACE1.to_string(),
+            avatar_subgraph: SPACE2.to_string(),
+            proof_subgraph: SPACE3.to_string(),
         };
         app.instantiate_contract(passport_id, Addr::unchecked(OWNER), &msg, &[], "passport", None)
             .unwrap()
@@ -158,18 +158,18 @@ mod tests {
         );
         app.update_block(next_block);
 
-        let name_subspace = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
-        let avatar_subspace = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
-        let proof_subspace = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
+        let name_subgraph = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
+        let avatar_subgraph = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
+        let proof_subgraph = instantiate_subgraph(app, OWNER.to_string(), passport_addr.to_string());
         app.update_block(next_block);
 
         let _res = app.execute_contract(
             Addr::unchecked(OWNER),
             passport_addr.clone(),
-            &PassportExecuteMsg::SetSubspaces {
-                name_subspace: name_subspace.to_string(),
-                avatar_subspace: avatar_subspace.to_string(),
-                proof_subspace: proof_subspace.to_string()
+            &PassportExecuteMsg::SetSubgraphs {
+                name_subgraph: name_subgraph.to_string(),
+                avatar_subgraph: avatar_subgraph.to_string(),
+                proof_subgraph: proof_subgraph.to_string()
             },
             &[],
         );
