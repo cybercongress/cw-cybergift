@@ -4,6 +4,7 @@ import hashlib
 import pandas as pd
 from subprocess import Popen, PIPE
 
+from aiohttp import ClientConnectorError
 from cyber_sdk.client.lcd import LCDClient
 from cyber_sdk.client.lcd.api.tx import CreateTxOptions
 from cyber_sdk.core import AccAddress, Coins
@@ -15,6 +16,17 @@ from cyber_sdk.core.bank.msgs import MultiSendInput, MultiSendOutput
 NODE_URL = 'https://rpc.space-pussy-1.cybernode.ai:443'
 LCD_URL = 'https://lcd.space-pussy-1.cybernode.ai/'
 NETWORK = 'space-pussy-1'
+
+
+def Error_Handler(func):
+    def Inner_Function(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except (EOFError, IndexError, KeyError, TimeoutError, ClientConnectorError) as e:
+            print(f'Error: {e}')
+        except Exception as e:
+            print(f'Error: {e}')
+    return Inner_Function
 
 
 def execute_bash(bash_command: str, display_data: bool = False) -> [str, str]:
@@ -149,7 +161,7 @@ class ContractUtils:
         _tx = _wallet.create_and_sign_tx(
             CreateTxOptions(
                 msgs=[_msg],
-                gas_prices="0boot",
+                gas_prices="0.1boot",
                 gas=str(gas),
                 fee_denoms=["boot"],
             )
@@ -283,6 +295,7 @@ class ContractUtils:
         except KeyError:
             return ipfs_hash
 
+    @Error_Handler
     def parse_contract_execution_json(self, contract_execution_json: str, row=None) -> None:
         print('\nEvents')
         _contract_execution_json = json.loads(contract_execution_json)
