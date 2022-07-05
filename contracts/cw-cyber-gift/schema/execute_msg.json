@@ -28,117 +28,13 @@
     {
       "type": "object",
       "required": [
-        "create_passport"
+        "update_owner"
       ],
       "properties": {
-        "create_passport": {
+        "update_owner": {
           "type": "object",
-          "required": [
-            "avatar",
-            "nickname"
-          ],
           "properties": {
-            "avatar": {
-              "type": "string"
-            },
-            "nickname": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "update_name"
-      ],
-      "properties": {
-        "update_name": {
-          "type": "object",
-          "required": [
-            "new_nickname",
-            "old_nickname"
-          ],
-          "properties": {
-            "new_nickname": {
-              "type": "string"
-            },
-            "old_nickname": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "update_avatar"
-      ],
-      "properties": {
-        "update_avatar": {
-          "type": "object",
-          "required": [
-            "new_avatar",
-            "nickname"
-          ],
-          "properties": {
-            "new_avatar": {
-              "type": "string"
-            },
-            "nickname": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "update_data"
-      ],
-      "properties": {
-        "update_data": {
-          "type": "object",
-          "required": [
-            "nickname"
-          ],
-          "properties": {
-            "data": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "nickname": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "update_particle"
-      ],
-      "properties": {
-        "update_particle": {
-          "type": "object",
-          "required": [
-            "nickname"
-          ],
-          "properties": {
-            "nickname": {
-              "type": "string"
-            },
-            "particle": {
+            "new_owner": {
               "type": [
                 "string",
                 "null"
@@ -152,25 +48,94 @@
     {
       "type": "object",
       "required": [
-        "proof_address"
+        "update_treasury_addr"
       ],
       "properties": {
-        "proof_address": {
+        "update_treasury_addr": {
           "type": "object",
           "required": [
-            "address",
+            "new_treasury_addr"
+          ],
+          "properties": {
+            "new_treasury_addr": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_target"
+      ],
+      "properties": {
+        "update_target": {
+          "type": "object",
+          "required": [
+            "new_target"
+          ],
+          "properties": {
+            "new_target": {
+              "$ref": "#/definitions/Uint64"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "register_merkle_root"
+      ],
+      "properties": {
+        "register_merkle_root": {
+          "type": "object",
+          "required": [
+            "merkle_root"
+          ],
+          "properties": {
+            "merkle_root": {
+              "description": "MerkleRoot is hex-encoded merkle root.",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "claim"
+      ],
+      "properties": {
+        "claim": {
+          "type": "object",
+          "required": [
+            "gift_amount",
+            "gift_claiming_address",
             "nickname",
-            "signature"
+            "proof"
           ],
           "properties": {
-            "address": {
+            "gift_amount": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "gift_claiming_address": {
               "type": "string"
             },
             "nickname": {
               "type": "string"
             },
-            "signature": {
-              "$ref": "#/definitions/Binary"
+            "proof": {
+              "description": "Proof is hex-encoded merkle proof.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }
@@ -180,338 +145,16 @@
     {
       "type": "object",
       "required": [
-        "remove_address"
+        "release"
       ],
       "properties": {
-        "remove_address": {
+        "release": {
           "type": "object",
           "required": [
-            "address",
-            "nickname"
+            "gift_address"
           ],
           "properties": {
-            "address": {
-              "type": "string"
-            },
-            "nickname": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "set_minter"
-      ],
-      "properties": {
-        "set_minter": {
-          "type": "object",
-          "required": [
-            "minter"
-          ],
-          "properties": {
-            "minter": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "set_owner"
-      ],
-      "properties": {
-        "set_owner": {
-          "type": "object",
-          "required": [
-            "owner"
-          ],
-          "properties": {
-            "owner": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "set_active"
-      ],
-      "properties": {
-        "set_active": {
-          "type": "object",
-          "required": [
-            "token_id"
-          ],
-          "properties": {
-            "token_id": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "set_subgraphs"
-      ],
-      "properties": {
-        "set_subgraphs": {
-          "type": "object",
-          "required": [
-            "avatar_subgraph",
-            "name_subgraph",
-            "proof_subgraph"
-          ],
-          "properties": {
-            "avatar_subgraph": {
-              "type": "string"
-            },
-            "name_subgraph": {
-              "type": "string"
-            },
-            "proof_subgraph": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "set_address_label"
-      ],
-      "properties": {
-        "set_address_label": {
-          "type": "object",
-          "required": [
-            "address",
-            "nickname"
-          ],
-          "properties": {
-            "address": {
-              "type": "string"
-            },
-            "label": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "nickname": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Transfer is a base message to move a token to another account without triggering actions",
-      "type": "object",
-      "required": [
-        "transfer_nft"
-      ],
-      "properties": {
-        "transfer_nft": {
-          "type": "object",
-          "required": [
-            "recipient",
-            "token_id"
-          ],
-          "properties": {
-            "recipient": {
-              "type": "string"
-            },
-            "token_id": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Send is a base message to transfer a token to a contract and trigger an action on the receiving contract.",
-      "type": "object",
-      "required": [
-        "send_nft"
-      ],
-      "properties": {
-        "send_nft": {
-          "type": "object",
-          "required": [
-            "contract",
-            "msg",
-            "token_id"
-          ],
-          "properties": {
-            "contract": {
-              "type": "string"
-            },
-            "msg": {
-              "$ref": "#/definitions/Binary"
-            },
-            "token_id": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Mint a new NFT, can only be called by the contract minter",
-      "type": "object",
-      "required": [
-        "mint"
-      ],
-      "properties": {
-        "mint": {
-          "$ref": "#/definitions/MintMsg_for_PassportMetadata"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Burn an NFT the sender has access to",
-      "type": "object",
-      "required": [
-        "burn"
-      ],
-      "properties": {
-        "burn": {
-          "type": "object",
-          "required": [
-            "token_id"
-          ],
-          "properties": {
-            "token_id": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Allows operator to transfer / send the token from the owner's account. If expiration is set, then this allowance has a time/height limit",
-      "type": "object",
-      "required": [
-        "approve"
-      ],
-      "properties": {
-        "approve": {
-          "type": "object",
-          "required": [
-            "spender",
-            "token_id"
-          ],
-          "properties": {
-            "expires": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/Expiration"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "spender": {
-              "type": "string"
-            },
-            "token_id": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Remove previously granted Approval",
-      "type": "object",
-      "required": [
-        "revoke"
-      ],
-      "properties": {
-        "revoke": {
-          "type": "object",
-          "required": [
-            "spender",
-            "token_id"
-          ],
-          "properties": {
-            "spender": {
-              "type": "string"
-            },
-            "token_id": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Allows operator to transfer / send any token from the owner's account. If expiration is set, then this allowance has a time/height limit",
-      "type": "object",
-      "required": [
-        "approve_all"
-      ],
-      "properties": {
-        "approve_all": {
-          "type": "object",
-          "required": [
-            "operator"
-          ],
-          "properties": {
-            "expires": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/Expiration"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "operator": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Remove previously granted ApproveAll permission",
-      "type": "object",
-      "required": [
-        "revoke_all"
-      ],
-      "properties": {
-        "revoke_all": {
-          "type": "object",
-          "required": [
-            "operator"
-          ],
-          "properties": {
-            "operator": {
+            "gift_address": {
               "type": "string"
             }
           }
@@ -619,6 +262,30 @@
           "properties": {
             "custom": {
               "$ref": "#/definitions/CyberMsgWrapper"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "staking"
+          ],
+          "properties": {
+            "staking": {
+              "$ref": "#/definitions/StakingMsg"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "distribution"
+          ],
+          "properties": {
+            "distribution": {
+              "$ref": "#/definitions/DistributionMsg"
             }
           },
           "additionalProperties": false
@@ -1134,68 +801,54 @@
       "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
       "type": "string"
     },
-    "Expiration": {
-      "description": "Expiration represents a point in time when some event happens. It can compare with a BlockInfo and will return is_expired() == true once the condition is hit (and for every block in the future)",
+    "DistributionMsg": {
+      "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
       "oneOf": [
         {
-          "description": "AtHeight will expire when `env.block.height` >= height",
+          "description": "This is translated to a [MsgSetWithdrawAddress](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L29-L37). `delegator_address` is automatically filled with the current contract's address.",
           "type": "object",
           "required": [
-            "at_height"
+            "set_withdraw_address"
           ],
           "properties": {
-            "at_height": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
+            "set_withdraw_address": {
+              "type": "object",
+              "required": [
+                "address"
+              ],
+              "properties": {
+                "address": {
+                  "description": "The `withdraw_address`",
+                  "type": "string"
+                }
+              }
             }
           },
           "additionalProperties": false
         },
         {
-          "description": "AtTime will expire when `env.block.time` >= time",
+          "description": "This is translated to a [[MsgWithdrawDelegatorReward](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L42-L50). `delegator_address` is automatically filled with the current contract's address.",
           "type": "object",
           "required": [
-            "at_time"
+            "withdraw_delegator_reward"
           ],
           "properties": {
-            "at_time": {
-              "$ref": "#/definitions/Timestamp"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Never will never expire. Used to express the empty variant",
-          "type": "object",
-          "required": [
-            "never"
-          ],
-          "properties": {
-            "never": {
-              "type": "object"
+            "withdraw_delegator_reward": {
+              "type": "object",
+              "required": [
+                "validator"
+              ],
+              "properties": {
+                "validator": {
+                  "description": "The `validator_address`",
+                  "type": "string"
+                }
+              }
             }
           },
           "additionalProperties": false
         }
       ]
-    },
-    "LabeledAddress": {
-      "type": "object",
-      "required": [
-        "address"
-      ],
-      "properties": {
-        "address": {
-          "type": "string"
-        },
-        "label": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
     },
     "Link": {
       "type": "object",
@@ -1227,80 +880,87 @@
         }
       }
     },
-    "MintMsg_for_PassportMetadata": {
-      "type": "object",
-      "required": [
-        "extension",
-        "owner",
-        "token_id"
-      ],
-      "properties": {
-        "extension": {
-          "description": "Any custom extension used by this contract",
-          "allOf": [
-            {
-              "$ref": "#/definitions/PassportMetadata"
-            }
-          ]
-        },
-        "owner": {
-          "description": "The owner of the newly minter NFT",
-          "type": "string"
-        },
-        "token_id": {
-          "description": "Unique ID of the NFT",
-          "type": "string"
-        },
-        "token_uri": {
-          "description": "Universal resource identifier for this NFT Should point to a JSON file that conforms to the ERC721 Metadata JSON Schema",
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
-    },
-    "PassportMetadata": {
-      "type": "object",
-      "required": [
-        "avatar",
-        "nickname"
-      ],
-      "properties": {
-        "addresses": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/LabeledAddress"
-          }
-        },
-        "avatar": {
-          "type": "string"
-        },
-        "data": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "nickname": {
-          "type": "string"
-        },
-        "particle": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
-    },
-    "Timestamp": {
-      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",
-      "allOf": [
+    "StakingMsg": {
+      "description": "The message types of the staking module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto",
+      "oneOf": [
         {
-          "$ref": "#/definitions/Uint64"
+          "description": "This is translated to a [MsgDelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L81-L90). `delegator_address` is automatically filled with the current contract's address.",
+          "type": "object",
+          "required": [
+            "delegate"
+          ],
+          "properties": {
+            "delegate": {
+              "type": "object",
+              "required": [
+                "amount",
+                "validator"
+              ],
+              "properties": {
+                "amount": {
+                  "$ref": "#/definitions/Coin"
+                },
+                "validator": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "This is translated to a [MsgUndelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L112-L121). `delegator_address` is automatically filled with the current contract's address.",
+          "type": "object",
+          "required": [
+            "undelegate"
+          ],
+          "properties": {
+            "undelegate": {
+              "type": "object",
+              "required": [
+                "amount",
+                "validator"
+              ],
+              "properties": {
+                "amount": {
+                  "$ref": "#/definitions/Coin"
+                },
+                "validator": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "This is translated to a [MsgBeginRedelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L95-L105). `delegator_address` is automatically filled with the current contract's address.",
+          "type": "object",
+          "required": [
+            "redelegate"
+          ],
+          "properties": {
+            "redelegate": {
+              "type": "object",
+              "required": [
+                "amount",
+                "dst_validator",
+                "src_validator"
+              ],
+              "properties": {
+                "amount": {
+                  "$ref": "#/definitions/Coin"
+                },
+                "dst_validator": {
+                  "type": "string"
+                },
+                "src_validator": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },

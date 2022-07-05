@@ -1,6 +1,9 @@
-use cosmwasm_std::{Deps, StdResult, Uint64};
-use crate::msg::{ClaimResponse, ConfigResponse, IsClaimedResponse, MerkleRootResponse, ReleaseStageStateResponse, ReleaseStateResponse, StateResponse};
+use cosmwasm_std::{Deps, Order, StdResult, Uint64};
+use cw_storage_plus::Bound;
+// use test::RunIgnored::No;
+use crate::msg::{AllReleaseStageStateResponse, ClaimResponse, ConfigResponse, IsClaimedResponse, MerkleRootResponse, ReleaseStageStateResponse, ReleaseStateResponse, StateResponse};
 use crate::state::{CLAIM, CONFIG, MERKLE_ROOT, RELEASE, RELEASE_INFO, STATE};
+
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
@@ -69,6 +72,21 @@ pub fn query_release_stage_state(deps: Deps, stage: Uint64) -> StdResult<Release
     let release_stage_state = RELEASE_INFO.load(deps.storage, stage.u64())?;
     let resp = ReleaseStageStateResponse {
         releases: release_stage_state
+    };
+    Ok(resp)
+}
+
+pub fn query_all_release_stage_state(deps: Deps, start: Option<u8>, limit: Option<u8>) -> StdResult<AllReleaseStageStateResponse> {
+    let start = start.map(Bound::inclusive);
+    let limit = limit.unwrap_or(100) as usize;
+
+    let all_release_stage_state = RELEASE_INFO
+        .range(deps.storage, start, None, Order::Ascending)
+        .take(limit)
+        .map(|item| item.unwrap().1)
+        .collect::<Vec<Uint64>>();
+    let resp = AllReleaseStageStateResponse {
+        releases: all_release_stage_state
     };
     Ok(resp)
 }

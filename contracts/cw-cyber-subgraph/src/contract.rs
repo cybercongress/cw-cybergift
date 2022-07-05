@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, StdResult, MessageInfo, Reply, Api, Addr, Empty, attr};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, StdResult, MessageInfo, Reply, Api, Addr, Empty};
 use cw2::{get_contract_version, set_contract_version};
 
 use crate::error::ContractError;
@@ -14,7 +14,7 @@ use semver::Version;
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
-const CONTRACT_NAME: &str = "cw-cyber-subgraph";
+const CONTRACT_NAME: &str = "cyber-subgraph";
 const CONTRACT_VERSION: &str = "1.0.0";
 
 #[cfg_attr(not(feature = "library"), entry_point)]

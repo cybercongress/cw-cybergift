@@ -1,18 +1,20 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Decimal, Deps, DepsMut, Env, Response, StdResult, Uint64, MessageInfo, Empty, attr};
+use cosmwasm_std::{to_binary, Binary, Decimal, Deps, DepsMut, Env, StdResult, Uint64, MessageInfo, Empty};
 use cw2::{get_contract_version, set_contract_version};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, State, STATE};
-use crate::execute::{execute_claim, execute_register_merkle_root, execute_release, execute_update_owner, execute_update_passport, execute_update_target, execute_update_treasury};
-use crate::query::{query_claim, query_config, query_is_claimed, query_merkle_root, query_release_stage_state, query_release_state, query_state};
-use cw1_subkeys::msg::{ExecuteMsg as Cw1ExecuteMsg};
+use crate::execute::{execute_claim, execute_execute, execute_register_merkle_root, execute_release, execute_update_owner, execute_update_target, execute_update_treasury};
+use crate::query::{query_all_release_stage_state, query_claim, query_config, query_is_claimed, query_merkle_root, query_release_stage_state, query_release_state, query_state};
+use cyber_std::CyberMsgWrapper;
 use semver::Version;
 
+type Response = cosmwasm_std::Response<CyberMsgWrapper>;
+
 // Version info, for migration info
-const CONTRACT_NAME: &str = "cw-cyber-gift";
+const CONTRACT_NAME: &str = "cyber-gift";
 const CONTRACT_VERSION: &str = "1.0.0";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -21,7 +23,7 @@ pub fn instantiate(
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
+) -> StdResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let owner = msg
@@ -60,10 +62,8 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
+        ExecuteMsg::Execute { msgs } => execute_execute(deps, env, info, msgs),
         ExecuteMsg::UpdateOwner { new_owner } => execute_update_owner(deps, env, info, new_owner),
-        ExecuteMsg::UpdatePassportAddr { new_passport_addr: new_passport } => {
-            execute_update_passport(deps, env, info, new_passport)
-        }
         ExecuteMsg::UpdateTreasuryAddr { new_treasury_addr: new_treasury } => {
             execute_update_treasury(deps, env, info, new_treasury)
         }
@@ -93,6 +93,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Claim { address } => to_binary(&query_claim(deps, address)?),
         QueryMsg::ReleaseState { address } => to_binary(&query_release_state(deps, address)?),
         QueryMsg::ReleaseStageState { stage } => to_binary(&query_release_stage_state(deps, stage)?),
+        QueryMsg::AllReleaseStageState {start, limit} => to_binary(&query_all_release_stage_state(deps, start, limit)?),
     }
 }
 

@@ -1,8 +1,9 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Decimal, Uint128, Uint64};
+use cosmwasm_std::{CosmosMsg, Decimal, Uint128, Uint64};
 use cw_utils::Expiration;
+use cyber_std::CyberMsgWrapper;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -20,11 +21,11 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    Execute {
+        msgs: Vec<CosmosMsg<CyberMsgWrapper>>,
+    },
     UpdateOwner {
         new_owner: Option<String>,
-    },
-    UpdatePassportAddr {
-        new_passport_addr: String,
     },
     UpdateTreasuryAddr {
         new_treasury_addr: String,
@@ -56,6 +57,10 @@ pub enum QueryMsg {
     Claim { address: String },
     ReleaseState { address: String },
     ReleaseStageState { stage: Uint64 },
+    AllReleaseStageState {
+        start: Option<u8>,
+        limit: Option<u8>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -107,6 +112,11 @@ pub struct ReleaseStateResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReleaseStageStateResponse {
     pub releases: Uint64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct AllReleaseStageStateResponse {
+    pub releases: Vec<Uint64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

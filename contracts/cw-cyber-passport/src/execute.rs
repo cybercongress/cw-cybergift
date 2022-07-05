@@ -1,6 +1,5 @@
 use std::ops::{Add, Mul};
-use cosmwasm_std::{attr, Binary, DepsMut, Env, MessageInfo, Uint128};
-use cw2::{get_contract_version, set_contract_version};
+use cosmwasm_std::{attr, Binary, CosmosMsg, DepsMut, Env, MessageInfo, Uint128};
 use cw721::{Cw721Execute, Cw721Query};
 use cw721_base::MintMsg;
 use cw_utils::must_pay;
@@ -20,6 +19,25 @@ type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 const CONSTITUTION: &str = "QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV";
 pub const CYBERSPACE_ID_MSG: u64 = 420;
 
+pub fn execute_execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msgs: Vec<CosmosMsg<CyberMsgWrapper>>,
+) -> Result<Response, ContractError> {
+    let mut res = Response::new().add_attribute("action", "execute");
+
+    let config = CONFIG.load(deps.storage)?;
+    let owner = config.owner;
+    if info.sender != owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    res = res.add_messages(msgs);
+
+    Ok(res)
+}
+
 pub fn execute_create_passport(
     deps: DepsMut,
     env: Env,
@@ -37,6 +55,13 @@ pub fn execute_create_passport(
 
     if nickname_length > 32 && nickname_length < 3 {
         return Err(ContractError::NotValidName {});
+    }
+
+    for byte in nickname.as_bytes().iter() {
+        // - && 0-9 && a-z
+        if (*byte != 45) && (*byte < 48 || *byte > 57) && (*byte < 97 || *byte > 122) {
+            return Err(ContractError::NotValidName {});
+        }
     }
 
     if nickname_length < 8 {
@@ -84,7 +109,7 @@ pub fn execute_create_passport(
         token_uri: None,
         extension: PassportMetadata {
             addresses: None,
-            avatar,
+            avatar: avatar.clone(),
             nickname: nickname.clone(),
             data: None,
             particle: None
@@ -140,6 +165,13 @@ pub fn execute_update_name(
 
     if nickname_length > 32 && nickname_length < 3 {
         return Err(ContractError::NotValidName {});
+    }
+
+    for byte in new_name.as_bytes().iter() {
+        // - && 0-9 && a-z
+        if (*byte != 45) && (*byte < 48 || *byte > 57) && (*byte < 97 || *byte > 122) {
+            return Err(ContractError::NotValidName {});
+        }
     }
 
     if nickname_length < 8 {
@@ -449,6 +481,9 @@ pub fn execute_remove_address(
         .tokens
         .update(deps.storage, &address_portid.clone().portid, |token| match token {
             Some(mut token_info) => {
+                if token_info.clone().extension.addresses.is_none() {
+                    return Err(ContractError::AddressNotFound {})
+                }
                 let mut addresses = token_info.clone().extension.addresses.unwrap();
                 let index = addresses.iter().position(|x| *x.address == address.clone());
                 if index.is_none() {
@@ -503,11 +538,11 @@ pub fn execute_mint(
 }
 
 pub fn execute_transfer_nft(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    recipient: String,
-    token_id: String,
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _recipient: String,
+    _token_id: String,
 ) -> Result<Response, ContractError> {
     // let config = CONFIG.load(deps.storage)?;
     //
@@ -638,6 +673,13 @@ pub fn execute_burn(
 
     let token_info = cw721_contract.tokens.load(deps.storage, &token_id.clone())?;
 
+    // strict access only for owner without approvals
+    let address_portid = NICKNAMES.load(deps.storage, &token_info.clone().extension.nickname)?;
+    let nft_owner = cw721_contract.owner_of(deps.as_ref(), env.clone(), address_portid.clone().portid, false)?;
+    if nft_owner.owner != info.clone().sender {
+        return Err(ContractError::Unauthorized {});
+    }
+
     if !NICKNAMES.has(deps.storage, &token_info.clone().extension.nickname) {
         return Err(ContractError::NicknameNotFound {});
     };
@@ -668,28 +710,6 @@ pub fn execute_burn(
 
     let response = cw721_contract.burn(deps, env, info, token_id)?;
     Ok(response.add_submessage(name_subgraph_submsg))
-}
-
-pub fn execute_set_minter(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    new_minter: String,
-) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    let owner = config.owner;
-    if info.sender != owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let new_minter = deps.api.addr_validate(&new_minter)?;
-    let cw721_contract = PassportContract::default();
-    cw721_contract.minter.save(deps.storage, &new_minter)?;
-
-    Ok(Response::new().add_attributes(vec![
-        attr("action", "set_minter"),
-        attr("action", new_minter.to_string())
-    ]))
 }
 
 pub fn execute_set_owner(
@@ -806,6 +826,9 @@ pub fn execute_set_address_label(
         .tokens
         .update(deps.storage, &address_portid.clone().portid, |token| match token {
             Some(mut token_info) => {
+                if token_info.clone().extension.addresses.is_none() {
+                    return Err(ContractError::AddressNotFound {})
+                }
                 let mut addresses = token_info.clone().extension.addresses.unwrap();
                 let index = addresses.iter().position(|x| *x.address == address.clone());
                 if index.is_none() {

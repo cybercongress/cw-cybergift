@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, attr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty, Env, MessageInfo, Response, StdResult, to_binary, Uint128, Uint64, WasmMsg};
+use cosmwasm_std::{Addr, attr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty, Env, MessageInfo, StdResult, to_binary, Uint128, Uint64, WasmMsg};
 
 use crate::error::ContractError;
 use crate::helpers::{update_coefficient, verify_merkle_proof};
@@ -8,10 +8,31 @@ use std::ops::{Add, Mul};
 use cw_cyber_passport::msg::{QueryMsg as PassportQueryMsg};
 use crate::msg::{AddressResponse, SignatureResponse};
 use cw1_subkeys::msg::{ExecuteMsg as Cw1ExecuteMsg};
+use cyber_std::CyberMsgWrapper;
 
+type Response = cosmwasm_std::Response<CyberMsgWrapper>;
+
+// TODO change 9 to 90 before release
 const RELEASE_STAGES: u64 = 9;
 
+pub fn execute_execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msgs: Vec<CosmosMsg<CyberMsgWrapper>>,
+) -> Result<Response, ContractError> {
+    let mut res = Response::new().add_attribute("action", "execute");
 
+    let cfg = CONFIG.load(deps.storage)?;
+    let owner = cfg.owner.ok_or(ContractError::Unauthorized {})?;
+    if info.sender != owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    res = res.add_messages(msgs);
+
+    Ok(res)
+}
 
 pub fn execute_update_owner(
     deps: DepsMut,
@@ -36,31 +57,6 @@ pub fn execute_update_owner(
     })?;
 
     Ok(Response::new().add_attributes(vec![attr("action", "update_owner")]))
-}
-
-pub fn execute_update_passport(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    new_passport: String,
-) -> Result<Response, ContractError> {
-    let cfg = CONFIG.load(deps.storage)?;
-    let owner = cfg.owner.ok_or(ContractError::Unauthorized {})?;
-    if info.sender != owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let passport = deps.api.addr_validate(&new_passport)?;
-
-    CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
-        cfg.passport_addr = passport;
-        Ok(cfg)
-    })?;
-
-    Ok(Response::new().add_attributes(vec![
-        attr("action", "update_passport"),
-        attr("passport", new_passport),
-    ]))
 }
 
 pub fn execute_update_treasury(
@@ -229,13 +225,6 @@ pub fn execute_claim(
                ]})?,
            funds: vec![]
        })
-       //  .add_message(BankMsg::Send {
-       //      to_address: res.address.clone(),
-       //      amount: vec![Coin {
-       //          denom: config.allowed_native,
-       //          amount: Uint128::new(CLAIM_BOUNTY),
-       //      }],
-       //  })
        .add_attributes(vec![
            attr("action", "claim"),
            attr("original", gift_claiming_address),
@@ -274,7 +263,7 @@ pub fn execute_release(
         return Err(ContractError::GiftReleased {});
     }
 
-    // TODO change HOUR to DAY after tests
+    // TODO change HOUR to DAY before release
     let amount: Uint128;
     if release_state.stage.is_zero() {
         // first claim, amount 10% of claim
@@ -336,13 +325,6 @@ pub fn execute_release(
            ]})?,
            funds: vec![]
        })
-        // .add_message(BankMsg::Send {
-        //     to_address: release_state.clone().address.into(),
-        //     amount: vec![Coin {
-        //         denom: config.allowed_native,
-        //         amount
-        //     }],
-        // })
        .add_attributes(vec![
            attr("action", "release"),
            attr("address", release_state.clone().address.to_string()),

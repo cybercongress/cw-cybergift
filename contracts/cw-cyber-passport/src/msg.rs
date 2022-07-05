@@ -1,4 +1,4 @@
-use cosmwasm_std::Binary;
+use cosmwasm_std::{Binary, CosmosMsg};
 use cw721::Expiration;
 use cw721_base::{
     MintMsg as CW721MintMsg,
@@ -7,10 +7,11 @@ use cw721_base::{
         QueryMsg as CW721QueryMsg,
     },
 };
+use cyber_std::CyberMsgWrapper;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::state::{Config, Extension};
+use crate::state::Extension;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -47,6 +48,9 @@ pub type MintMsg = CW721MintMsg<Extension>;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    Execute {
+        msgs: Vec<CosmosMsg<CyberMsgWrapper>>,
+    },
     CreatePassport {
         nickname: String,
         avatar: String,

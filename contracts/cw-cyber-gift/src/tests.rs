@@ -2,7 +2,7 @@
 mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{attr, from_binary, Binary, Coin, Uint128, Uint64, Empty, Addr, coins, BlockInfo};
-    use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg, ReleaseStageStateResponse, StateResponse};
+    use crate::msg::{AllReleaseStageStateResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg, ReleaseStageStateResponse, StateResponse};
     use crate::ContractError;
     use crate::contract::{execute, instantiate, query};
     use cw_multi_test::{next_block, Contract, ContractWrapper, Executor};
@@ -34,7 +34,7 @@ mod tests {
     }
 
     pub fn contract_gift() -> Box<dyn Contract<CyberMsgWrapper, Empty>> {
-        let contract = ContractWrapper::new_with_empty(
+        let contract = ContractWrapper::new(
             crate::contract::execute,
             crate::contract::instantiate,
             crate::contract::query,
@@ -175,16 +175,6 @@ mod tests {
         );
         app.update_block(next_block);
 
-        let _res = app.execute_contract(
-            Addr::unchecked(OWNER),
-            passport_addr.clone(),
-            &PassportExecuteMsg::SetMinter {
-                minter: passport_addr.to_string()
-            },
-            &[],
-        );
-        app.update_block(next_block);
-
         (gift_addr, passport_addr, treasury_addr)
     }
 
@@ -309,6 +299,11 @@ mod tests {
         let info: StateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::State {}).unwrap();
         println!("STATE - {:?}", info);
 
+        let res: AllReleaseStageStateResponse = app.wrap().query_wasm_smart(
+            &gift_addr,
+            &QueryMsg::AllReleaseStageState {start:Some(7u8), limit:Some(2u8)}
+        ).unwrap();
+        println!("RELEASES - {:?}", res);
     }
 
     #[test]

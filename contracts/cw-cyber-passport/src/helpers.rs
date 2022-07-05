@@ -123,7 +123,6 @@ pub fn proof_address_cosmos(
     signature: Binary,
 ) -> Result<bool, ContractError> {
     // ADR-36 signed object, need to construct this object part by part and add encoded signed data with signer
-    // let obj = json!(
     //     {
     //         "account_number":"0",
     //         "chain_id":"",
@@ -138,7 +137,7 @@ pub fn proof_address_cosmos(
     //                 }
     //             }],
     //         "sequence":"0"
-    //     });
+    //     };
 
     let msg = passport_owner.add(":").add(&message);
     let mut msg_adr36:Vec<u8> = vec![123,34,97,99,99,111,117,110,116,95,110,117,109,98,101,114,34,58,34,48,34,44,34,99,104,97,105,110,95,105,100,34,58,34,34,44,34,102,101,101,34,58,123,34,97,109,111,117,110,116,34,58,91,93,44,34,103,97,115,34,58,34,48,34,125,44,34,109,101,109,111,34,58,34,34,44,34,109,115,103,115,34,58,91,123,34,116,121,112,101,34,58,34,115,105,103,110,47,77,115,103,83,105,103,110,68,97,116,97,34,44,34,118,97,108,117,101,34,58,123,34,100,97,116,97,34,58,34];
@@ -150,9 +149,7 @@ pub fn proof_address_cosmos(
     let hash = Sha256::digest(&msg_adr36);
     let sig: CosmosSignature = from_binary(&signature).unwrap();
 
-    // deps.api.addr_validate(&address.clone())?;
     let (prefix, _, _) = bech32::decode(&address.clone()).unwrap();
-
     let address_sig = pub_key_to_address(&deps, &sig.pub_key, &prefix)?;
 
     if address != address_sig.to_string() {
@@ -169,6 +166,7 @@ pub fn proof_address_cosmos(
         .map_err(|err| ContractError::IsNotEligible {
             msg: err.to_string(),
         });
+
     return result;
 }
 
@@ -176,10 +174,12 @@ pub fn proof_address_cosmos(
 fn pub_key_to_address(_deps: &Deps, pub_key: &[u8], prefix: &str) -> StdResult<Addr> {
     let compressed_pub_key = to_compressed_pub_key(pub_key)?;
     let mut ripemd160_hasher = Ripemd160::new();
+
     ripemd160_hasher.update(Sha256::digest(&compressed_pub_key));
+
     let addr_bytes = ripemd160_hasher.finalize().to_vec();
     let addr_str = bech32::encode(prefix, addr_bytes.to_base32(), Variant::Bech32).unwrap();
-    // deps.api.addr_validate(&addr_str)
+
     Ok(Addr::unchecked(&addr_str))
 }
 

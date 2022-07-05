@@ -50,7 +50,7 @@ pub fn query_active_passport(deps: Deps, address: String) -> StdResult<TokenInfo
     Ok(token_info)
 }
 
-pub fn query_passort_signed(
+pub fn query_passport_signed(
     deps: Deps,
     nickname: String,
     address: String
