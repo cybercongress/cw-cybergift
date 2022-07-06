@@ -1,8 +1,8 @@
 use crate::state::{Config, MERKLE_ROOT, State, STATE};
 use crate::ContractError;
 use cosmwasm_std::{
-    Decimal, DepsMut, MessageInfo, StdError, StdResult, Storage,
-    Uint128, VerificationError,
+    Decimal, DepsMut, MessageInfo, StdResult, Storage,
+    Uint128,
 };
 use sha2::Digest;
 use std::convert::TryInto;
@@ -60,7 +60,7 @@ pub fn verify_merkle_proof(
     let mut root_buf: [u8; 32] = [0; 32];
     hex::decode_to_slice(merkle_root, &mut root_buf)?;
     if root_buf != hash {
-        return Err(StdError::verification_err(VerificationError::GenericErr {}).into());
+        return Err(ContractError::VerificationFailed {});
     }
     Ok(true)
 }

@@ -47,7 +47,7 @@ pub fn proof_address_ethereum(
     let signer_address = decode_address(address.clone().as_str())?;
     if signer_address != calculated_address {
         return Err(ContractError::IsNotEligible {
-            msg: "signer address is not calculated addr".to_string(),
+            msg: "Signer address is not calculated address".to_string(),
         });
     }
     deps.api

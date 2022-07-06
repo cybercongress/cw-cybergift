@@ -410,12 +410,12 @@ pub fn execute_proof_address(
         if token_info.extension.addresses.is_some() {
             let mut addresses = token_info.extension.addresses.unwrap();
             if addresses.len() > 7 {
-                return Err(ContractError::IsNotEligible {
+                return Err(ContractError::ErrAddAddress {
                     msg: "Too many addresses".to_string(),
                 });
             }
             if addresses.iter().position(|x| *x.address == address.clone()).is_some() {
-                return Err(ContractError::IsNotEligible {
+                return Err(ContractError::ErrAddAddress {
                     msg: "Address already exist".to_string(),
                 });
             }
@@ -515,99 +515,77 @@ pub fn execute_mint(
     _info: MessageInfo,
     _mint_msg: MintMsg<Extension>,
 ) -> Result<Response, ContractError> {
-    // only for dev and test phase
-    // let config = CONFIG.load(deps.storage)?;
-    // if info.clone().sender != config.owner {
-    //     return Err(ContractError::Unauthorized {});
-    // }
-    //
-    // if mint_msg.clone().extension.addresses.is_some() {
-    //     return Err(ContractError::InvalidInitialization {});
-    // }
-    //
-    // // contract itself can only mint
-    // let internal_info = MessageInfo {
-    //     sender: env.clone().contract.address,
-    //     funds: info.funds,
-    // };
-    //
-    // let cw721_contract = PassportContract::default();
-    // let response = cw721_contract.mint(deps, env, internal_info, mint_msg)?;
-    // Ok(response)
     Err(ContractError::DisabledFunctionality {})
 }
 
 pub fn execute_transfer_nft(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    _recipient: String,
-    _token_id: String,
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    recipient: String,
+    token_id: String,
 ) -> Result<Response, ContractError> {
-    // let config = CONFIG.load(deps.storage)?;
-    //
-    // let cw721_contract = PassportContract::default();
-    //
-    // let mut nickname = String::default();
-    // let mut avatar = String::default();
-    //
-    // let new_owner = deps.api.addr_validate(&recipient)?;
-    //
-    // // clear proved addresses and data
-    // cw721_contract
-    //     .tokens
-    //     .update(deps.storage, &token_id.clone(), |token| match token {
-    //         Some(mut token_info) => {
-    //             nickname = token_info.clone().extension.nickname;
-    //             avatar = token_info.clone().extension.avatar;
-    //             token_info.extension.addresses = Some(vec![]);
-    //             token_info.extension.data = None;
-    //             token_info.extension.particle = None;
-    //             Ok(token_info)
-    //         }
-    //         None => return Err(ContractError::TokenNotFound {}),
-    //     })?;
-    //
-    // if !NICKNAMES.has(deps.storage, &nickname.clone()) {
-    //     return Err(ContractError::NicknameNotFound {});
-    // };
-    //
-    // // map nickname to new owner
-    // NICKNAMES.save(
-    //     deps.storage,
-    //     &nickname.clone(),
-    //     &AddressPortID{
-    //         address: new_owner.clone(),
-    //         portid: token_id.clone()
-    //     }
-    // )?;
-    //
-    // // clear this passport as active
-    // if ACTIVE.has(deps.storage, &info.clone().sender) {
-    //     let active = ACTIVE.load(deps.storage, &info.clone().sender)?;
-    //     if active == token_id {
-    //         ACTIVE.remove(deps.storage, &info.clone().sender);
-    //     }
-    // }
-    //
-    // let nickname_particle = prepare_particle(nickname.clone())?;
-    // let address_particle = prepare_particle(new_owner.clone().to_string())?;
-    //
-    // // link passport to new owner
-    // // nickname -> new address cyberlink
-    // let name_subgraph_submsg = prepare_cyberlink_submsg(
-    //     config.name_subgraph.into(),
-    //     vec![
-    //         Link{
-    //             from: nickname_particle.clone().into(),
-    //             to: address_particle.clone().into()
-    //         },
-    //     ]
-    // );
-    //
-    // let response = cw721_contract.transfer_nft(deps, env, info, recipient, token_id)?;
-    // Ok(response.add_submessage(name_subgraph_submsg))
-    Err(ContractError::DisabledFunctionality {})
+    let config = CONFIG.load(deps.storage)?;
+
+    let cw721_contract = PassportContract::default();
+
+    let mut nickname = String::default();
+
+    let new_owner = deps.api.addr_validate(&recipient)?;
+
+    // clear proved addresses and data
+    cw721_contract
+        .tokens
+        .update(deps.storage, &token_id.clone(), |token| match token {
+            Some(mut token_info) => {
+                nickname = token_info.clone().extension.nickname;
+                token_info.extension.addresses = Some(vec![]);
+                token_info.extension.data = None;
+                token_info.extension.particle = None;
+                Ok(token_info)
+            }
+            None => return Err(ContractError::TokenNotFound {}),
+        })?;
+
+    if !NICKNAMES.has(deps.storage, &nickname.clone()) {
+        return Err(ContractError::NicknameNotFound {});
+    };
+
+    // map nickname to new owner
+    NICKNAMES.save(
+        deps.storage,
+        &nickname.clone(),
+        &AddressPortID{
+            address: new_owner.clone(),
+            portid: token_id.clone()
+        }
+    )?;
+
+    // clear this passport as active
+    if ACTIVE.has(deps.storage, &info.clone().sender) {
+        let active = ACTIVE.load(deps.storage, &info.clone().sender)?;
+        if active == token_id {
+            ACTIVE.remove(deps.storage, &info.clone().sender);
+        }
+    }
+
+    let nickname_particle = prepare_particle(nickname.clone())?;
+    let address_particle = prepare_particle(new_owner.clone().to_string())?;
+
+    // link passport to new owner
+    // nickname -> new address cyberlink
+    let name_subgraph_submsg = prepare_cyberlink_submsg(
+        config.name_subgraph.into(),
+        vec![
+            Link{
+                from: nickname_particle.clone().into(),
+                to: address_particle.clone().into()
+            },
+        ]
+    );
+
+    let response = cw721_contract.transfer_nft(deps, env, info, recipient, token_id)?;
+    Ok(response.add_submessage(name_subgraph_submsg))
 }
 
 // NOTE disabled

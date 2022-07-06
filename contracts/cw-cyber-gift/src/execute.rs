@@ -165,7 +165,7 @@ pub fn execute_claim(
     )?;
 
     if res.signed == false {
-        return Err(ContractError::IsNotEligible { msg: "passport isn't assigned".to_string() });
+        return Err(ContractError::IsNotProved {});
     }
 
     // returns error of proof is invalid

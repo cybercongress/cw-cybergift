@@ -11,7 +11,7 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Disabled Functionality")]
+    #[error("Disabled functionality")]
     DisabledFunctionality {},
 
     #[error("Unauthorized")]
@@ -69,7 +69,7 @@ pub enum ContractError {
     #[error("Data is not valid")]
     NotValidData {},
 
-    #[error("Nickname already exists")]
+    #[error("Nickname is already exists")]
     NicknameAlreadyExists {},
 
     #[error("Nickname not found")]
@@ -78,8 +78,11 @@ pub enum ContractError {
     #[error("Token not found")]
     TokenNotFound {},
 
-    #[error("Address is not eligible to claim airdrop, {msg}")]
+    #[error("Address is not eligible to claim gift, {msg}")]
     IsNotEligible { msg: String },
+
+    #[error("Cannot add the address to the passport, {msg}")]
+    ErrAddAddress { msg: String },
 
     // -----
     // TODO check this overwrites of error messages

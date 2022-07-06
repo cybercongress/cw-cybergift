@@ -22,26 +22,20 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
-    #[error("Invalid input")]
-    InvalidInput {},
-
-    #[error("Already claimed")]
+    #[error("Your gift is already claimed")]
     Claimed {},
 
-    #[error("Not claimed")]
+    #[error("Your gift is not claimed yet")]
     NotClaimed {},
 
-    #[error("Not activated")]
+    #[error("Gift is not activated yet")]
     NotActivated {},
 
     #[error("Stage released")]
     StageReleased {},
 
-    #[error("Gift released")]
+    #[error("Your gift is fully released")]
     GiftReleased {},
-
-    #[error("Empty release state")]
-    EmptyReleaseState {},
 
     #[error("Wrong length")]
     WrongLength {},
@@ -52,11 +46,14 @@ pub enum ContractError {
     #[error("Cannot migrate from unsupported version: {previous_version}")]
     CannotMigrateVersion { previous_version: String },
 
-    #[error("Address is not eligible to claim airdrop, {msg}")]
-    IsNotEligible { msg: String },
+    #[error("Address is not proved with your passport")]
+    IsNotProved {},
 
     #[error("Gift is over")]
     GiftIsOver {},
+
+    #[error("Verification failed")]
+    VerificationFailed {},
 
     #[error("Semver parsing error: {0}")]
     SemVer(String),
