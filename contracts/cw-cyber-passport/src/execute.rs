@@ -61,7 +61,7 @@ pub fn execute_create_passport(
 
     let nickname_length = nickname.clone().len();
 
-    if nickname_length > 32 && nickname_length < 3 {
+    if nickname_length > 32 || nickname_length < 3 {
         return Err(ContractError::NotValidName {});
     }
 
@@ -171,7 +171,7 @@ pub fn execute_update_name(
 
     let nickname_length = new_name.clone().len();
 
-    if nickname_length > 32 && nickname_length < 3 {
+    if nickname_length > 32 || nickname_length < 3 {
         return Err(ContractError::NotValidName {});
     }
 
@@ -305,7 +305,7 @@ pub fn execute_update_data(
 ) -> Result<Response, ContractError> {
     if new_data.is_some() {
         let data_length = new_data.clone().unwrap().len();
-        if data_length > 256 && data_length < 3 {
+        if data_length > 256 || data_length < 3 {
             return Err(ContractError::NotValidData {});
         }
     }
@@ -402,14 +402,8 @@ pub fn execute_proof_address(
     let proof_res:bool;
     if decode_address(&address).is_err() {
         proof_res = proof_address_cosmos(deps.as_ref(), address.clone(), info.sender.to_string(), CONSTITUTION.into(), signature)?
-        //     .map_err(|err| ContractError::VerificationFailed {
-        //         msg: err.to_string(),
-        // })?;
     } else {
         proof_res = proof_address_ethereum(deps.as_ref(), address.clone(), info.sender.to_string(),CONSTITUTION.into(), signature)?
-            // .map_err(|err| ContractError::VerificationFailed {
-            //     msg: err.to_string(),
-        // })?;
     }
 
     // save address if not exists or there is enought space for address (<=8)
@@ -792,7 +786,7 @@ pub fn execute_set_address_label(
     label: Option<String>,
 ) -> Result<Response, ContractError> {
 
-    if label.is_some() && label.clone().unwrap().len() > 32 {
+    if label.is_some() && label.clone().unwrap().len() > 16 {
         return Err(ContractError::NotValidLabel {});
     }
 

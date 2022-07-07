@@ -35,7 +35,8 @@
           "type": "object",
           "required": [
             "avatar",
-            "nickname"
+            "nickname",
+            "signature"
           ],
           "properties": {
             "avatar": {
@@ -43,6 +44,9 @@
             },
             "nickname": {
               "type": "string"
+            },
+            "signature": {
+              "$ref": "#/definitions/Binary"
             }
           }
         }
