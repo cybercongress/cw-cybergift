@@ -1,4 +1,4 @@
-# cw-cybergift
+# cw-cyber-gift
 
 ## Generate root, proofs and verify proofs
 
