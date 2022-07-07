@@ -31,7 +31,7 @@ pub enum ContractError {
     #[error("Gift is not activated yet")]
     NotActivated {},
 
-    #[error("Stage released")]
+    #[error("Stage released, wait for the next stage")]
     StageReleased {},
 
     #[error("Your gift is fully released")]

@@ -14,7 +14,7 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let owner = "owner";
-        let citizen = "bostrom1wnpak7sfawsfv9c8vqe7naxfa4g99lv77d7c0z";
+        let citizen = "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv";
         let name_subgraph = "name_subgraph";
         let avatar_subgraph = "avatar_subgraph";
         let proof_subgraph = "proof_subgraph";
@@ -48,6 +48,8 @@ mod tests {
         let create_passport_msg = ExecuteMsg::CreatePassport {
             nickname: "test-nickname".to_string(),
             avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
+            // signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLCJzaWduYXR1cmUiOiJTZG40Z25pQzR2MExJM2Z2U0ZMbmRtM05HZ2VFNUlJWDJOSmZsN1cxWmcxOEplTUNSbHMySkNvK2xUTll0elZKN0RUaFRuK3k0NitXUTdvaWJLaHl4UT09In0=").unwrap(),
+            signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
         };
 
         let info = mock_info(&citizen, &[]);
@@ -126,7 +128,7 @@ mod tests {
         let proof_address_msg = ExecuteMsg::ProofAddress {
             nickname: "test-nickname-new".to_string(),
             address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
-            signature: Binary::from_base64("0x25e7436c57e830643dc475745c28d98472074d0adb838bef1813859b06c1099619fcc67daa4b65d764c6ea1f93c637f1a8eb40515e639528f2abc5c95b46d3521c").unwrap(),
+            signature: Binary::from_base64("0xa3b7b3adee5805488a62d96ca58ccee80a65a3f74343d1e6f19b0b597afe65da123c020cb968ca141d48b844b098ee33ad5aa827b0da89fb3b89ea272f9a42b01b").unwrap(),
         };
 
         let info = mock_info(&citizen, &[]);
@@ -144,7 +146,7 @@ mod tests {
         let proof_address_msg = ExecuteMsg::ProofAddress {
             nickname: "test-nickname-new".to_string(),
             address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
-            signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLCJzaWduYXR1cmUiOiJTZG40Z25pQzR2MExJM2Z2U0ZMbmRtM05HZ2VFNUlJWDJOSmZsN1cxWmcxOEplTUNSbHMySkNvK2xUTll0elZKN0RUaFRuK3k0NitXUTdvaWJLaHl4UT09In0=").unwrap(),
+            signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
         };
 
         let info = mock_info(&citizen, &[]);
@@ -166,24 +168,24 @@ mod tests {
         let proof_address_msg = ExecuteMsg::ProofAddress {
             nickname: "test-nickname-new".to_string(),
             address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
-            signature: Binary::from_base64("0x25e7436c57e830643dc475745c28d98472074d0adb838bef1813859b06c1099619fcc67daa4b65d764c6ea1f93c637f1a8eb40515e639528f2abc5c95b46d3521c").unwrap(),
+            signature: Binary::from_base64("0xa3b7b3adee5805488a62d96ca58ccee80a65a3f74343d1e6f19b0b597afe65da123c020cb968ca141d48b844b098ee33ad5aa827b0da89fb3b89ea272f9a42b01b").unwrap(),
         };
 
         let info = mock_info(&citizen, &[]);
         let err = execute(deps.as_mut(), mock_env(), info, proof_address_msg).unwrap_err();
 
-        assert_eq!(err, ContractError::IsNotEligible { msg: "Address already exist".to_string() });
+        assert_eq!(err, ContractError::ErrAddAddress { msg: "Address already exist".to_string() });
 
         let proof_address_msg = ExecuteMsg::ProofAddress {
             nickname: "test-nickname-new".to_string(),
             address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
-            signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLCJzaWduYXR1cmUiOiJTZG40Z25pQzR2MExJM2Z2U0ZMbmRtM05HZ2VFNUlJWDJOSmZsN1cxWmcxOEplTUNSbHMySkNvK2xUTll0elZKN0RUaFRuK3k0NitXUTdvaWJLaHl4UT09In0=").unwrap(),
+            signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
         };
 
         let info = mock_info(&citizen, &[]);
         let err = execute(deps.as_mut(), mock_env(), info, proof_address_msg).unwrap_err();
 
-        assert_eq!(err, ContractError::IsNotEligible { msg: "Address already exist".to_string() });
+        assert_eq!(err, ContractError::ErrAddAddress { msg: "Address already exist".to_string() });
 
         // check that is available to delete proved addresses
 

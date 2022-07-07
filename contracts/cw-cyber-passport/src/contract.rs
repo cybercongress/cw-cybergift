@@ -50,7 +50,11 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Execute { msgs } => execute_execute(deps, env, info, msgs),
-        ExecuteMsg::CreatePassport {nickname, avatar} => execute_create_passport(deps, env, info, nickname, avatar),
+        ExecuteMsg::CreatePassport {
+            nickname,
+            avatar,
+            signature
+        } => execute_create_passport(deps, env, info, nickname, avatar, signature),
         ExecuteMsg::UpdateName { old_nickname, new_nickname} => execute_update_name(deps, env, info, old_nickname, new_nickname),
         ExecuteMsg::UpdateAvatar { nickname, new_avatar} => execute_update_avatar(deps, env, info, nickname, new_avatar),
         ExecuteMsg::UpdateData { nickname, data} => execute_update_data(deps, env, info, nickname, data),

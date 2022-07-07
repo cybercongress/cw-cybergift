@@ -14,7 +14,6 @@ use crate::state::{Config, CONFIG};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
-// TODO discuss and make this configurable in config (or not)
 // TODO set to constitution in production deployment
 const CONSTITUTION: &str = "QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV";
 pub const CYBERSPACE_ID_MSG: u64 = 420;
@@ -44,7 +43,16 @@ pub fn execute_create_passport(
     info: MessageInfo,
     nickname: String,
     avatar: String,
+    signature: Binary
 ) -> Result<Response, ContractError> {
+    let verified = proof_address_cosmos(deps.as_ref(), info.clone().sender.to_string(), info.clone().sender.to_string(), CONSTITUTION.into(), signature)?;
+
+    if !verified {
+        return Err(ContractError::VerificationFailed {
+            msg: "Signature verification failed".to_string(),
+        });
+    }
+
     if NICKNAMES.has(deps.storage, &nickname.clone()) {
         return Err(ContractError::NicknameAlreadyExists {});
     }
@@ -393,15 +401,15 @@ pub fn execute_proof_address(
     // check address type and call needed proof function
     let proof_res:bool;
     if decode_address(&address).is_err() {
-        proof_res = proof_address_cosmos(deps.as_ref(), address.clone(), info.sender.to_string(), CONSTITUTION.into(), signature)
-            .map_err(|err| ContractError::IsNotEligible {
-                msg: err.to_string(),
-        })?;
+        proof_res = proof_address_cosmos(deps.as_ref(), address.clone(), info.sender.to_string(), CONSTITUTION.into(), signature)?
+        //     .map_err(|err| ContractError::VerificationFailed {
+        //         msg: err.to_string(),
+        // })?;
     } else {
-        proof_res = proof_address_ethereum(deps.as_ref(), address.clone(), info.sender.to_string(),CONSTITUTION.into(), signature)
-            .map_err(|err| ContractError::IsNotEligible {
-                msg: err.to_string(),
-        })?;
+        proof_res = proof_address_ethereum(deps.as_ref(), address.clone(), info.sender.to_string(),CONSTITUTION.into(), signature)?
+            // .map_err(|err| ContractError::VerificationFailed {
+            //     msg: err.to_string(),
+        // })?;
     }
 
     // save address if not exists or there is enought space for address (<=8)
@@ -426,8 +434,8 @@ pub fn execute_proof_address(
         };
         cw721_contract.tokens.save(deps.storage, &address_portid.clone().portid, &token_info)?;
     } else {
-        return Err(ContractError::IsNotEligible {
-            msg: "Address is not eligible".to_string(),
+        return Err(ContractError::VerificationFailed {
+            msg: "Signature verification failed".to_string(),
         });
     }
 

@@ -57,7 +57,7 @@ pub enum ContractError {
     #[error("Invalid initialization")]
     InvalidInitialization {},
 
-    #[error("Wrong amount for the name")]
+    #[error("Wrong token amount for this name")]
     WrongAmountForName {},
 
     #[error("Name is not valid")]
@@ -69,7 +69,7 @@ pub enum ContractError {
     #[error("Data is not valid")]
     NotValidData {},
 
-    #[error("Nickname is already exists")]
+    #[error("Nickname already exists")]
     NicknameAlreadyExists {},
 
     #[error("Nickname not found")]
@@ -78,11 +78,11 @@ pub enum ContractError {
     #[error("Token not found")]
     TokenNotFound {},
 
-    #[error("Address is not eligible to claim gift, {msg}")]
-    IsNotEligible { msg: String },
-
     #[error("Cannot add the address to the passport, {msg}")]
     ErrAddAddress { msg: String },
+
+    #[error("Verification failed")]
+    VerificationFailed { msg: String },
 
     // -----
     // TODO check this overwrites of error messages

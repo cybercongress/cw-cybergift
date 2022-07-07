@@ -54,6 +54,7 @@ pub enum ExecuteMsg {
     CreatePassport {
         nickname: String,
         avatar: String,
+        signature: Binary,
     },
     UpdateName{
         old_nickname: String,

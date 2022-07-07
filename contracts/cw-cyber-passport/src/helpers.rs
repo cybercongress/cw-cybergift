@@ -34,7 +34,7 @@ pub fn proof_address_ethereum(
     let (v, rs) = match sig.split_last() {
         Some(pair) => pair,
         None => {
-            return Err(ContractError::IsNotEligible {
+            return Err(ContractError::VerificationFailed {
                 msg: "Signature must not be empty".to_string(),
             })
         }
@@ -46,13 +46,13 @@ pub fn proof_address_ethereum(
     let calculated_address = ethereum_address_raw(&calculated_pubkey)?;
     let signer_address = decode_address(address.clone().as_str())?;
     if signer_address != calculated_address {
-        return Err(ContractError::IsNotEligible {
+        return Err(ContractError::VerificationFailed {
             msg: "Signer address is not calculated address".to_string(),
         });
     }
     deps.api
         .secp256k1_verify(&hash, rs, &calculated_pubkey)
-        .map_err(|err| ContractError::IsNotEligible {
+        .map_err(|err| ContractError::VerificationFailed {
             msg: err.to_string(),
         })
 }
@@ -163,7 +163,7 @@ pub fn proof_address_cosmos(
             &sig.signature.as_slice(),
             &sig.pub_key.as_slice(),
         )
-        .map_err(|err| ContractError::IsNotEligible {
+        .map_err(|err| ContractError::VerificationFailed {
             msg: err.to_string(),
         });
 
