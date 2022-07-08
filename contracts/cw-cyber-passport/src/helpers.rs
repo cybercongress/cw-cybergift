@@ -122,6 +122,16 @@ pub fn proof_address_cosmos(
     message: String,
     signature: Binary,
 ) -> Result<bool, ContractError> {
+    let prefix:String;
+    let b32 = bech32::decode(&address.clone());
+    if b32.is_ok() {
+        prefix = b32.unwrap().0
+    } else { return Err(ContractError::ErrorDataParse {})}
+
+    let sig: CosmosSignature = from_binary(&signature)?;
+
+    let address_sig = pub_key_to_address(&deps, &sig.pub_key, &prefix)?;
+
     // ADR-36 signed object, need to construct this object part by part and add encoded signed data with signer
     //     {
     //         "account_number":"0",
@@ -147,10 +157,6 @@ pub fn proof_address_cosmos(
     msg_adr36.append(&mut vec![34,125,125,93,44,34,115,101,113,117,101,110,99,101,34,58,34,48,34,125]);
 
     let hash = Sha256::digest(&msg_adr36);
-    let sig: CosmosSignature = from_binary(&signature).unwrap();
-
-    let (prefix, _, _) = bech32::decode(&address.clone()).unwrap();
-    let address_sig = pub_key_to_address(&deps, &sig.pub_key, &prefix)?;
 
     if address != address_sig.to_string() {
         return Err(ContractError::Unauthorized {})

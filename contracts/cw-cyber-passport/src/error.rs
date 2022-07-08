@@ -84,6 +84,9 @@ pub enum ContractError {
     #[error("Verification failed")]
     VerificationFailed { msg: String },
 
+    #[error("Data parsing failed")]
+    ErrorDataParse { },
+
     // -----
     // TODO check this overwrites of error messages
 

@@ -8,7 +8,7 @@ use semver::Version;
 use crate::error::ContractError;
 use crate::execute::{execute_burn, execute_create_passport, execute_mint, execute_proof_address, execute_remove_address, execute_send_nft, execute_set_active, execute_set_owner, execute_set_subgraphs, execute_transfer_nft, execute_update_avatar, execute_update_name, CYBERSPACE_ID_MSG, execute_set_address_label, execute_update_data, execute_update_particle, execute_execute};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::query::{query_active_passport, query_address_by_nickname, query_config, query_metadata_by_nickname, query_passport_signed, query_passport_by_nickname, query_portid};
+use crate::query::{query_active_passport, query_address_by_nickname, query_config, query_metadata_by_nickname, query_passport_signed, query_passport_by_nickname, query_last_portid, query_portid_by_nickname};
 use crate::state::{Config, CONFIG, PassportContract, PORTID};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
@@ -94,7 +94,8 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::Portid {} => to_binary(&query_portid(deps)?),
+        QueryMsg::LastPortid {} => to_binary(&query_last_portid(deps)?),
+        QueryMsg::PortidByNickname {nickname} => to_binary(&query_portid_by_nickname(deps, nickname)?),
         QueryMsg::AddressByNickname {nickname} => to_binary(&query_address_by_nickname(deps, nickname)?),
         QueryMsg::PassportByNickname {nickname} => to_binary(&query_passport_by_nickname(deps, nickname)?),
         QueryMsg::MetadataByNickname {nickname} => to_binary(&query_metadata_by_nickname(deps, nickname)?),

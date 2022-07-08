@@ -169,7 +169,8 @@ impl From<ExecuteMsg> for CW721ExecuteMsg<Extension> {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     Config {},
-    Portid {},
+    LastPortid {},
+    PortidByNickname { nickname: String },
     AddressByNickname { nickname: String },
     PassportByNickname { nickname: String },
     MetadataByNickname { nickname: String },

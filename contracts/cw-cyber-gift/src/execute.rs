@@ -192,7 +192,6 @@ pub fn execute_claim(
     let release_state = ReleaseState {
         address: Addr::unchecked(res.clone().address),
         balance_claim: claim_amount.checked_sub(Uint128::new(CLAIM_BOUNTY))?,
-        // balance_claim: claim_amount.checked_sub(Uint128::new(0))?,
         stage: Uint64::zero(),
         stage_expiration: Expiration::Never {},
     };

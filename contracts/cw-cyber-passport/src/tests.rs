@@ -7,7 +7,7 @@ mod tests {
     use crate::state::{LabeledAddress, PassportMetadata};
     use crate::contract::{execute, instantiate};
     use crate::error::ContractError;
-    use crate::query::{query_active_passport, query_config, query_metadata_by_nickname, query_passport_by_nickname, query_portid};
+    use crate::query::{query_active_passport, query_config, query_metadata_by_nickname, query_passport_by_nickname, query_last_portid, query_portid_by_nickname};
 
     #[test]
     fn proper_flow() {
@@ -45,21 +45,21 @@ mod tests {
         let expected_portid = PortidResponse {
             portid: 0u64
         };
-        assert_eq!(query_portid(deps.as_ref()).unwrap(), expected_portid);
+        assert_eq!(query_last_portid(deps.as_ref()).unwrap(), expected_portid);
 
         let create_passport_msg = ExecuteMsg::CreatePassport {
             nickname: "test-nickname".to_string(),
             avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
             signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
         };
-
         let info = mock_info(&citizen, &[]);
         execute(deps.as_mut(), mock_env(), info, create_passport_msg).unwrap();
 
         let expected_portid = PortidResponse {
             portid: 1u64
         };
-        assert_eq!(query_portid(deps.as_ref()).unwrap(), expected_portid);
+        assert_eq!(query_last_portid(deps.as_ref()).unwrap(), expected_portid);
+        assert_eq!(query_portid_by_nickname(deps.as_ref(), "test-nickname".to_string()).unwrap(), PortidResponse{ portid: 1 });
 
         let expected_passport_metadata = PassportMetadata {
             nickname: "test-nickname".to_string(),

@@ -22,6 +22,12 @@ pub fn query_metadata_by_nickname(deps: Deps, nickname: String) -> StdResult<Pas
     Ok(token_info.extension)
 }
 
+pub fn query_portid_by_nickname(deps: Deps, nickname: String) -> StdResult<PortidResponse> {
+    let address_portid = NICKNAMES.load(deps.storage, &nickname)?;
+    let portid = address_portid.portid.parse::<u64>().unwrap();
+    Ok(PortidResponse { portid })
+}
+
 pub fn query_passport_by_nickname(deps: Deps, nickname: String) -> StdResult<TokenInfo<PassportMetadata>> {
     let address_portid = NICKNAMES.load(deps.storage, &nickname)?;
     let cw721_contract = PassportContract::default();
@@ -36,7 +42,7 @@ pub fn query_address_by_nickname(deps: Deps, nickname: String) -> StdResult<Addr
     Ok(AddressResponse { address: address_portid.address.into() })
 }
 
-pub fn query_portid(deps: Deps) -> StdResult<PortidResponse> {
+pub fn query_last_portid(deps: Deps) -> StdResult<PortidResponse> {
     let portid = PORTID.load(deps.storage)?;
     Ok(PortidResponse { portid: portid.into() })
 }
