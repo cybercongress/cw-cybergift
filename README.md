@@ -31,3 +31,6 @@ docker run --rm -v "$(pwd)":/code \
 ![Release Gift](img/release_gift.png)
 ## Load testing
 [Jupyter notebook](testdata/generate_test_data/gift_and_passport_contracts_load_testing.ipynb)
+
+## Bounty
+cyberGift contracts have treasury which works as a security proxy for claiming process. cyberCongress will gradually replenish the treasury to minimize the risks of a hack. All BOOT on a contract balance is subject to bounty. If you find a way to get BOOT from contracts - do, but please report on the vulnerability.
