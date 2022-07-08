@@ -42,7 +42,12 @@ pub fn proof_address_ethereum(
     let recovery = get_recovery_param(*v)?;
 
     // Verification
-    let calculated_pubkey = deps.api.secp256k1_recover_pubkey(&hash, rs, recovery)?;
+    let calculated_pubkey:Vec<u8>;
+    let rcv_key = deps.api.secp256k1_recover_pubkey(&hash, rs, recovery);
+    if rcv_key.is_ok() {
+        calculated_pubkey = rcv_key.unwrap()
+    } else { return Err(ContractError::ErrorKeyRecovery {}) }
+
     let calculated_address = ethereum_address_raw(&calculated_pubkey)?;
     let signer_address = decode_address(address.clone().as_str())?;
     if signer_address != calculated_address {

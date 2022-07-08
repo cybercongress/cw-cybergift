@@ -175,7 +175,7 @@ mod tests {
         let info = mock_info(&citizen, &[]);
         let err = execute(deps.as_mut(), mock_env(), info, proof_address_msg).unwrap_err();
 
-        assert_eq!(err, ContractError::ErrAddAddress { msg: "Address already exist".to_string() });
+        assert_eq!(err, ContractError::ErrorAddAddress { msg: "Address already exist".to_string() });
 
         let proof_address_msg = ExecuteMsg::ProofAddress {
             nickname: "test-nickname-new".to_string(),
@@ -186,7 +186,7 @@ mod tests {
         let info = mock_info(&citizen, &[]);
         let err = execute(deps.as_mut(), mock_env(), info, proof_address_msg).unwrap_err();
 
-        assert_eq!(err, ContractError::ErrAddAddress { msg: "Address already exist".to_string() });
+        assert_eq!(err, ContractError::ErrorAddAddress { msg: "Address already exist".to_string() });
 
         // check that is available to delete proved addresses
 

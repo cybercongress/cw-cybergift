@@ -1,7 +1,7 @@
 #[cfg(feature = "backtraces")]
 use std::backtrace::Backtrace;
 
-use cosmwasm_std::{RecoverPubkeyError, StdError};
+use cosmwasm_std::{StdError};
 use cw721_base::ContractError as CW721ContractError;
 use thiserror::Error;
 use cyber_std::particle::ParticleError;
@@ -79,7 +79,7 @@ pub enum ContractError {
     TokenNotFound {},
 
     #[error("Cannot add the address to the passport, {msg}")]
-    ErrAddAddress { msg: String },
+    ErrorAddAddress { msg: String },
 
     #[error("Verification failed")]
     VerificationFailed { msg: String },
@@ -87,25 +87,8 @@ pub enum ContractError {
     #[error("Data parsing failed")]
     ErrorDataParse { },
 
-    // -----
-    // TODO check this overwrites of error messages
-
-    #[error("Invalid hash format")]
-    InvalidHashFormat,
-
-    #[error("Invalid signature format")]
-    InvalidSignatureFormat,
-
-    #[error("Invalid recovery parameter. Supported values: 0 and 1.")]
-
-    InvalidRecoveryParam,
-    #[error("Unknown error: {error_code}")]
-
-    UnknownErr {
-        error_code: u32,
-        #[cfg(feature = "backtraces")]
-        backtrace: Backtrace,
-    },
+    #[error("Key recovery failed")]
+    ErrorKeyRecovery { },
 }
 
 impl From<ParticleError> for ContractError {
@@ -126,23 +109,6 @@ impl From<CW721ContractError> for ContractError {
             CW721ContractError::Claimed {} => ContractError::Claimed {},
             CW721ContractError::Expired {} => ContractError::Expired {},
             CW721ContractError::ApprovalNotFound {spender} => ContractError::ApprovalNotFound {spender}
-        }
-    }
-}
-
-impl From<RecoverPubkeyError> for ContractError {
-    fn from(msg: RecoverPubkeyError) -> ContractError {
-        match msg {
-            RecoverPubkeyError::InvalidHashFormat {} => ContractError::InvalidHashFormat{},
-            RecoverPubkeyError::InvalidSignatureFormat {} => ContractError::InvalidHashFormat{},
-            RecoverPubkeyError::InvalidRecoveryParam {} => ContractError::InvalidHashFormat{},
-            RecoverPubkeyError::UnknownErr {
-                error_code, ..
-            } => ContractError::UnknownErr {
-                error_code,
-                #[cfg(feature = "backtraces")]
-                backtrace
-            },
         }
     }
 }

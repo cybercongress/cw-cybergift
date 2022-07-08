@@ -411,12 +411,12 @@ pub fn execute_proof_address(
         if token_info.extension.addresses.is_some() {
             let mut addresses = token_info.extension.addresses.unwrap();
             if addresses.len() > 7 {
-                return Err(ContractError::ErrAddAddress {
+                return Err(ContractError::ErrorAddAddress {
                     msg: "Too many addresses".to_string(),
                 });
             }
             if addresses.iter().position(|x| *x.address == address.clone()).is_some() {
-                return Err(ContractError::ErrAddAddress {
+                return Err(ContractError::ErrorAddAddress {
                     msg: "Address already exist".to_string(),
                 });
             }
