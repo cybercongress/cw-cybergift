@@ -17,11 +17,31 @@
     {
       "type": "object",
       "required": [
-        "portid"
+        "last_portid"
       ],
       "properties": {
-        "portid": {
+        "last_portid": {
           "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "portid_by_nickname"
+      ],
+      "properties": {
+        "portid_by_nickname": {
+          "type": "object",
+          "required": [
+            "nickname"
+          ],
+          "properties": {
+            "nickname": {
+              "type": "string"
+            }
+          }
         }
       },
       "additionalProperties": false
