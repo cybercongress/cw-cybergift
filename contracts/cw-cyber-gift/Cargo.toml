@@ -46,7 +46,7 @@ cw0 = "0.10.3"
 cw2 = "0.13.4"
 cw20 = "0.13.4"
 cw1-subkeys = "0.13.4"
-cosmwasm-std = { version = "1.0.0" }
+cosmwasm-std = { version = "1.0.0", features = ["staking","stargate"] }
 cyber-std = { version = "0.2.1" }
 cw-utils = { version = "0.13.4" }
 cw-cyber-passport = { path = "../cw-cyber-passport", features = ["library"] }

@@ -81,7 +81,6 @@ pub enum ExecuteMsg {
         nickname: String,
         address: String,
     },
-    SetMinter { minter: String },
     SetOwner { owner: String },
     SetActive { token_id: String },
     SetSubgraphs {
