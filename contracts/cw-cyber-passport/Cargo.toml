@@ -1,0 +1,51 @@
+[package]
+name = "cw-cyber-passport"
+version = "1.0.0"
+authors = ["CyberHead"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+rpath = false
+lto = true
+overflow-checks = true
+opt-level = 3
+debug = false
+debug-assertions = false
+codegen-units = 1
+incremental = false
+panic = 'abort'
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-std = { version = "1.0.0", features = ["staking"] }
+cosmwasm-storage = { version = "1.0.0" }
+cw-storage-plus = "0.13.4"
+cw2 = "0.13.4"
+cw721 = { version = "0.13.2" }
+schemars = "0.8.8"
+serde = { version = "1.0.137", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.31" }
+cyber-std = { version = "0.2.1" }
+cw-cyber-subgraph = { path = "../cw-cyber-subgraph" }
+cw-utils = { version = "0.13.4" }
+hex = "0.4"
+sha2 = { version = "0.9.5", default-features = false }
+sha3 = "0.9"
+bech32 = "0.8.1"
+cw721-base = { version = "0.13.2", features = ["library"] }
+primitive-types = {version = "0.10.1", default-features = false, features = ["byteorder"]}
+ripemd160 = "0.9.1"
+base64 = "0.13"
+semver = "1"
+
+[dev-dependencies]
+cosmwasm-schema = { version = "1.0.0" }
+

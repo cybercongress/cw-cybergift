@@ -1,0 +1,50 @@
+[package]
+name = "cw-cyber-gift"
+version = "1.0.0"
+authors = ["CyberHead"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+rpath = false
+lto = true
+overflow-checks = true
+opt-level = 3
+debug = false
+debug-assertions = false
+codegen-units = 1
+incremental = false
+panic = 'abort'
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+anyhow = "1"
+cw0 = "0.10.3"
+cw2 = "0.13.4"
+cw20 = "0.13.4"
+cw1-subkeys = "0.13.4"
+cosmwasm-std = { version = "1.0.0", features = ["staking"] }
+cyber-std = { version = "0.2.1" }
+cw-utils = { version = "0.13.4" }
+cw-cyber-passport = { path = "../cw-cyber-passport", features = ["library"] }
+cw-cyber-subgraph = { path = "../cw-cyber-subgraph", features = ["library"] }
+cw-storage-plus = { version = "0.13.4" }
+schemars = "0.8.8"
+serde = { version = "1.0.137", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.31" }
+hex = "0.4"
+sha2 = { version = "0.9.5", default-features = false }
+semver = "1"
+
+[dev-dependencies]
+cosmwasm-schema = { version = "1.0.0" }
+cw-multi-test = { version = "0.13.4" }
+cw1-whitelist = { version = "0.13.4" }
+cyber-std-test = { version = "0.2.1" }
