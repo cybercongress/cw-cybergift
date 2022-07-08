@@ -14,8 +14,7 @@ use crate::state::{Config, CONFIG};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
-// TODO set to constitution in production deployment
-const CONSTITUTION: &str = "QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV";
+const CONSTITUTION: &str = "QmcHB9GKHAKCLQhmSj71qNJhENJJg8Gymd1PvvsCQBhG7M";
 pub const CYBERSPACE_ID_MSG: u64 = 420;
 
 pub fn execute_execute(

@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, attr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty
 use crate::error::ContractError;
 use crate::helpers::{update_coefficient, verify_merkle_proof};
 use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE, ClaimState, STATE, RELEASE_INFO};
-use cw_utils::{Expiration, DAY, HOUR};
+use cw_utils::{Expiration, DAY};
 use std::ops::{Add, Mul};
 use cw_cyber_passport::msg::{QueryMsg as PassportQueryMsg};
 use crate::msg::{AddressResponse, SignatureResponse};
@@ -12,8 +12,7 @@ use cyber_std::CyberMsgWrapper;
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
-// TODO change 9 to 90 before release
-const RELEASE_STAGES: u64 = 9;
+const RELEASE_STAGES: u64 = 90;
 
 pub fn execute_execute(
     deps: DepsMut,
@@ -263,14 +262,13 @@ pub fn execute_release(
         return Err(ContractError::GiftReleased {});
     }
 
-    // TODO change HOUR to DAY before release
     let amount: Uint128;
     if release_state.stage.is_zero() {
         // first claim, amount 10% of claim
         amount = release_state
             .balance_claim
             .mul(Decimal::percent(10));
-        release_state.stage_expiration = HOUR.after(&env.block);
+        release_state.stage_expiration = DAY.after(&env.block);
         release_state.stage = Uint64::new(RELEASE_STAGES);
     } else {
         if release_state.stage_expiration.is_expired(&env.block) {
@@ -284,7 +282,7 @@ pub fn execute_release(
                 amount = release_state
                     .balance_claim
                     .mul(Decimal::from_ratio(1u128, release_state.stage));
-                release_state.stage_expiration = HOUR.after(&env.block);
+                release_state.stage_expiration = DAY.after(&env.block);
                 release_state.stage = release_state.stage.checked_sub(Uint64::new(1))?;
             }
         } else {
