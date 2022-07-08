@@ -11,6 +11,8 @@ mod tests {
 
     #[test]
     fn proper_flow() {
+        // NOTE to run tests change CONSTITUTION to QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV
+
         let mut deps = mock_dependencies();
 
         let owner = "owner";
@@ -48,7 +50,6 @@ mod tests {
         let create_passport_msg = ExecuteMsg::CreatePassport {
             nickname: "test-nickname".to_string(),
             avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
-            // signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLCJzaWduYXR1cmUiOiJTZG40Z25pQzR2MExJM2Z2U0ZMbmRtM05HZ2VFNUlJWDJOSmZsN1cxWmcxOEplTUNSbHMySkNvK2xUTll0elZKN0RUaFRuK3k0NitXUTdvaWJLaHl4UT09In0=").unwrap(),
             signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
         };
 

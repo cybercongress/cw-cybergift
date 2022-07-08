@@ -12,12 +12,8 @@ mod tests {
 
 
     const NATIVE_TOKEN: &str = "boot";
-    const OWNER: &str = "owner0001";
-    const CYB1: &str = "bostrom1wnpak7sfawsfv9c8vqe7naxfa4g99lv77d7c0z";
-    // const CYB2: &str = "cyb0002";
-    // const CYB3: &str = "cyb0003";
-    // const CYB4: &str = "cyb0004";
-    // const SOMEBODY: &str = "somebody";
+    const OWNER: &str = "owner";
+    const CYB1: &str = "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv";
     const SPACE1: &str = "space1";
     const SPACE2: &str = "space2";
     const SPACE3: &str = "space3";
@@ -180,6 +176,10 @@ mod tests {
 
     #[test]
     fn proper_flow() {
+        // NOTE to run tests change RELEASE_STAGES to 9
+        // NOTE to run tests change CONSTITUTION to QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV
+        // NOTE to run tests change duration from DAY to HOUR
+
         let init_funds = coins(INIT_BALANCE_OWNER.u128(), NATIVE_TOKEN);
         let mut app = mock_app(&init_funds);
 
@@ -200,6 +200,7 @@ mod tests {
             &PassportExecuteMsg::CreatePassport {
                 nickname: "passport1".to_string(),
                 avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
+                signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
             },
             &[],
         );
@@ -210,7 +211,7 @@ mod tests {
             &PassportExecuteMsg::ProofAddress {
                 nickname: "passport1".to_string(),
                 address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
-                signature: Binary::from_base64("0x25e7436c57e830643dc475745c28d98472074d0adb838bef1813859b06c1099619fcc67daa4b65d764c6ea1f93c637f1a8eb40515e639528f2abc5c95b46d3521c").unwrap(),
+                signature: Binary::from_base64("0xa3b7b3adee5805488a62d96ca58ccee80a65a3f74343d1e6f19b0b597afe65da123c020cb968ca141d48b844b098ee33ad5aa827b0da89fb3b89ea272f9a42b01b").unwrap(),
             },
             &[],
         );
@@ -221,6 +222,7 @@ mod tests {
             &PassportExecuteMsg::CreatePassport {
                 nickname: "passport2".to_string(),
                 avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
+                signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
             },
             &[],
         );
@@ -231,7 +233,7 @@ mod tests {
             &PassportExecuteMsg::ProofAddress {
                 nickname: "passport2".to_string(),
                 address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
-                signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLCJzaWduYXR1cmUiOiJTZG40Z25pQzR2MExJM2Z2U0ZMbmRtM05HZ2VFNUlJWDJOSmZsN1cxWmcxOEplTUNSbHMySkNvK2xUTll0elZKN0RUaFRuK3k0NitXUTdvaWJLaHl4UT09In0=").unwrap(),
+                signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
             },
             &[],
         );
