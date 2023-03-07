@@ -56,11 +56,8 @@ pub enum QueryMsg {
     IsClaimed { address: String },
     Claim { address: String },
     ReleaseState { address: String },
-    ReleaseStageState { stage: Uint64 },
-    AllReleaseStageState {
-        start: Option<u8>,
-        limit: Option<u8>,
-    },
+    ReleaseStageState { stage: u32 },
+    AllReleaseStageStates{}
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -111,12 +108,12 @@ pub struct ReleaseStateResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReleaseStageStateResponse {
-    pub releases: Uint64,
+    pub releases: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct AllReleaseStageStateResponse {
-    pub releases: Vec<Uint64>,
+    pub releases: Vec<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

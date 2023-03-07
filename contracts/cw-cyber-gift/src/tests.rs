@@ -1,33 +1,34 @@
 #[cfg(test)]
 mod tests {
+    use std::borrow::BorrowMut;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{attr, from_binary, Binary, Coin, Uint128, Uint64, Empty, Addr, coins, BlockInfo};
-    use crate::msg::{AllReleaseStageStateResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg, ReleaseStageStateResponse, StateResponse};
+    use cosmwasm_std::{attr, from_binary, Binary, Coin, Uint128, Uint64, Empty, Addr, coins};
+    use crate::msg::{AllReleaseStageStateResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg};
     use crate::ContractError;
     use crate::contract::{execute, instantiate, query};
     use cw_multi_test::{next_block, Contract, ContractWrapper, Executor};
     use cyber_std::{CyberMsgWrapper};
     use cw_cyber_passport::msg::ExecuteMsg as PassportExecuteMsg;
     use cyber_std_test::CyberApp;
-
+    use csv;
+    use serde::Deserialize;
 
     const NATIVE_TOKEN: &str = "boot";
     const OWNER: &str = "owner";
-    const CYB1: &str = "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv";
     const SPACE1: &str = "space1";
     const SPACE2: &str = "space2";
     const SPACE3: &str = "space3";
     const INIT_BALANCE_OWNER: Uint128 = Uint128::new(10000000000000);
-    const INIT_BALANCE_TREASURY: Uint128 = Uint128::new(300000000);
+    const INIT_BALANCE_TREASURY: Uint128 = Uint128::new(570000000);
     const CF_UP: Uint128 = Uint128::new(20);
-    const CF_DOWN: Uint128 = Uint128::new(5);
+    const CF_DOWN: Uint128 = Uint128::new(10);
     const CF: Uint128 = Uint128::new(20);
-    const TARGET_CLAIM: Uint64 = Uint64::new(2);
+    const TARGET_CLAIM: Uint64 = Uint64::new(20);
 
-    pub fn next_hour(block: &mut BlockInfo) {
-        block.time = block.time.plus_seconds(3600);
-        block.height += 1;
-    }
+    // pub fn next_hour(block: &mut BlockInfo) {
+    //     block.time = block.time.plus_seconds(3600);
+    //     block.height += 1;
+    // }
 
     pub fn contract_gift() -> Box<dyn Contract<CyberMsgWrapper, Empty>> {
         let contract = ContractWrapper::new(
@@ -176,136 +177,163 @@ mod tests {
 
     #[test]
     fn proper_flow() {
-        // NOTE to run tests change RELEASE_STAGES to 9
-        // NOTE to run tests change CONSTITUTION to QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV
-        // NOTE to run tests change duration from DAY to HOUR
-
         let init_funds = coins(INIT_BALANCE_OWNER.u128(), NATIVE_TOKEN);
         let mut app = mock_app(&init_funds);
 
         let (gift_addr, passport_addr, treasury_addr) = setup_contracts(&mut app);
 
+        #[derive(Debug, Deserialize)]
+        struct GiftData {
+            amount: u128,
+            nickname: String,
+            avatar: String,
+            ethereum_address: String,
+            bostrom_address: String,
+            cosmos_address: String,
+            proof_ethereum_msg_sig: String,
+            proof_bostrom_msg_sig: String,
+            proof_cosmos_msg_sig: String,
+            ethereum_proof: String,
+            cosmos_proof: String,
+        }
+
+        impl GiftData {
+            fn ethereum_proof_vec(&self) -> Vec<String> {
+                self.ethereum_proof.replace(&['[',']','\''][..],"").split(",").map(|x| x.parse::<String>().unwrap()).collect()
+            }
+
+            fn cosmos_proof_vec(&self) -> Vec<String> {
+                self.cosmos_proof.replace(&['[',']','\''][..],"").split(",").map(|x| x.parse::<String>().unwrap()).collect()
+            }
+        }
+
+        let mut test_data = csv::Reader::from_path("test-data-20.csv").unwrap();
+        let mut data: Vec<GiftData> = Vec::new();
+        for result in test_data.deserialize() {
+            let gift_data: GiftData = result.unwrap();
+            data.push(gift_data)
+        }
+
         let _res = app.execute_contract(
             Addr::unchecked(OWNER),
             gift_addr.clone(),
             &ExecuteMsg::RegisterMerkleRoot {
-                merkle_root: "96c287db438923b77acee90e134e1f2d9bc506bc5544eab8e89e8886b83ca5c7".to_string()
+                merkle_root: "1d9d3cfc8527c79b1dd338d48a3ba15c4d5430bafb140a241b24364d521739cd".to_string()
             },
             &[],
         );
 
-        let _res = app.execute_contract(
-            Addr::unchecked(CYB1),
-            passport_addr.clone(),
-            &PassportExecuteMsg::CreatePassport {
-                nickname: "passport1".to_string(),
-                avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
-                signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
-            },
-            &[],
-        );
-
-        let _res = app.execute_contract(
-            Addr::unchecked(CYB1),
-            passport_addr.clone(),
-            &PassportExecuteMsg::ProofAddress {
-                nickname: "passport1".to_string(),
-                address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
-                signature: Binary::from_base64("0xa3b7b3adee5805488a62d96ca58ccee80a65a3f74343d1e6f19b0b597afe65da123c020cb968ca141d48b844b098ee33ad5aa827b0da89fb3b89ea272f9a42b01b").unwrap(),
-            },
-            &[],
-        );
-
-        let _res = app.execute_contract(
-            Addr::unchecked(CYB1),
-            passport_addr.clone(),
-            &PassportExecuteMsg::CreatePassport {
-                nickname: "passport2".to_string(),
-                avatar: "QmVPRR3i2oFRjgMKS5dw4QbGNwdXNoYxfcpS3C9pVxHEbb".to_string(),
-                signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
-            },
-            &[],
-        );
-
-        let _res = app.execute_contract(
-            Addr::unchecked(CYB1),
-            passport_addr.clone(),
-            &PassportExecuteMsg::ProofAddress {
-                nickname: "passport2".to_string(),
-                address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
-                signature: Binary::from_base64("eyJwdWJfa2V5IjoiQStNWEZwN1llTE12b1ZsQVU2NlV1MHozV3RjOUN1d3EwZW9jVWh0Tk9tbnciLAoic2lnbmF0dXJlIjoicGRWNHhVY1RCT3loMFNFY2dWRnJxYUc4cXBOSHJocktLZGRxdzJ5d3Eyb2NVWGpybDNDdW8rZlRtUjR4bUpucGVIQi90blM4NEF2K0FuUnlRSlJ1S0E9PSJ9").unwrap(),
-            },
-            &[],
-        );
-
-        let _res = app.execute_contract(
-            Addr::unchecked(CYB1),
-            gift_addr.clone(),
-            &ExecuteMsg::Claim {
-                nickname: "passport1".to_string(),
-                gift_claiming_address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
-                gift_amount: Uint128::new(10000000),
-                proof: vec!["020feac4e445b8710e223ef9d32d60d0fa060e5a33c421c217ac4976641afa9f".to_string()],
-            },
-            &[],
-        );
-
-        let _res = app.execute_contract(
-            Addr::unchecked(CYB1),
-            gift_addr.clone(),
-            &ExecuteMsg::Claim {
-                nickname: "passport2".to_string(),
-                gift_claiming_address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
-                gift_amount: Uint128::new(5000000),
-                proof: vec!["c0d07d81376100727f8de10cbbc3f46c04c13a906c4a8de884abebaa94d33737".to_string()]
-            },
-            &[],
-        );
-
-        for i in 0..10 {
-            let res = app.execute_contract(
-                Addr::unchecked(CYB1),
-                gift_addr.clone(),
-                &ExecuteMsg::Release {
-                    gift_address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
+        for obj in &data {
+            let _ = app.execute_contract(
+                Addr::unchecked(obj.bostrom_address.clone()),
+                passport_addr.clone(),
+                &PassportExecuteMsg::CreatePassport {
+                    nickname: obj.nickname.clone(),
+                    avatar: obj.avatar.clone(),
+                    signature: Binary::from_base64(&obj.proof_bostrom_msg_sig.clone()).unwrap(),
                 },
                 &[],
             );
-            println!("Release [ETH][{:?}]- {:?}", i, res);
 
-            let res = app.execute_contract(
-                Addr::unchecked(CYB1),
-                gift_addr.clone(),
-                &ExecuteMsg::Release {
-                    gift_address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
+            let _ = app.execute_contract(
+                Addr::unchecked(obj.bostrom_address.clone()),
+                passport_addr.clone(),
+                &PassportExecuteMsg::ProofAddress {
+                    nickname: obj.nickname.clone(),
+                    address: obj.ethereum_address.clone(),
+                    signature: Binary::from_base64(&obj.proof_ethereum_msg_sig.clone()).unwrap(),
                 },
                 &[],
             );
-            println!("Release [CMS][{:?}]- {:?}", i, res);
 
-            app.update_block(next_hour);
+            let _ = app.execute_contract(
+                Addr::unchecked(obj.bostrom_address.clone()),
+                passport_addr.clone(),
+                &PassportExecuteMsg::ProofAddress {
+                    nickname: obj.nickname.clone(),
+                    address: obj.cosmos_address.clone(),
+                    signature: Binary::from_base64(&obj.proof_cosmos_msg_sig.clone()).unwrap(),
+                },
+                &[],
+            );
         }
 
+        fn claim_and_release(app: &mut CyberApp, gift_addr: &Addr, treasury_addr: &Addr, data: &Vec<GiftData>, a: usize, b: usize, c: usize, d: usize) {
+            for i in a..b {
+                let _ =app.execute_contract(
+                    Addr::unchecked(data[i].bostrom_address.clone()),
+                    gift_addr.clone(),
+                    &ExecuteMsg::Claim {
+                        nickname: data[i].nickname.clone(),
+                        gift_claiming_address: data[i].cosmos_address.clone(),
+                        gift_amount: Uint128::from(data[i].amount.clone()),
+                        proof: data[i].cosmos_proof_vec()
+                    }, &[],
+                );
 
-        println!("GIFT BAL - {:?}", app.wrap().query_balance(&gift_addr, "boot").unwrap());
-        println!("TREASURY BAL - {:?}", app.wrap().query_balance(&treasury_addr, "boot").unwrap());
-        println!("PASSPORT #1 BAL- {:?}", app.wrap().query_balance(&Addr::unchecked(CYB1), "boot").unwrap());
+                let _ =app.execute_contract(
+                    Addr::unchecked(data[i].bostrom_address.clone()),
+                    gift_addr.clone(),
+                    &ExecuteMsg::Claim {
+                        nickname: data[i].nickname.clone(),
+                        gift_claiming_address: data[i].ethereum_address.clone(),
+                        gift_amount: Uint128::from(data[i].amount.clone()),
+                        proof: data[i].ethereum_proof_vec()
+                    }, &[],
+                );
 
-        for i in 0..10 {
-            let info: ReleaseStageStateResponse = app.wrap().query_wasm_smart(
-                &gift_addr,
-                &QueryMsg::ReleaseStageState { stage: Uint64::from(1u64) }
-            ).unwrap();
-            println!("STAGE {:?} - RELEASES {:?}", i, info.releases.u64());
+                let _ =app.execute_contract(
+                    Addr::unchecked(data[i].bostrom_address.clone()),
+                    gift_addr.clone(),
+                    &ExecuteMsg::Release {
+                        gift_address: data[i].cosmos_address.clone(),
+                    }, &[],
+                );
+
+                let _ =app.execute_contract(
+                    Addr::unchecked(data[i].bostrom_address.clone()),
+                    gift_addr.clone(),
+                    &ExecuteMsg::Release {
+                        gift_address: data[i].ethereum_address.clone(),
+                    }, &[],
+                );
+            }
+            let rel: AllReleaseStageStateResponse = app.wrap().query_wasm_smart(gift_addr, &QueryMsg::AllReleaseStageStates {}).unwrap();
+            println!("RELEASES - {:?}", rel.releases);
+            println!("TREASURY BAL - {:?}", app.wrap().query_balance(treasury_addr, "boot").unwrap());
+
+            for i in c..d {
+                let _ = app.execute_contract(
+                    Addr::unchecked(data[i].bostrom_address.clone()),
+                    gift_addr.clone(),
+                    &ExecuteMsg::Release {
+                        gift_address: data[i].cosmos_address.clone(),
+                    }, &[],
+                );
+
+                let _ =app.execute_contract(
+                    Addr::unchecked(data[i].bostrom_address.clone()),
+                    gift_addr.clone(),
+                    &ExecuteMsg::Release {
+                        gift_address: data[i].ethereum_address.clone(),
+                    }, &[],
+                );
+            }
+            let rel: AllReleaseStageStateResponse = app.wrap().query_wasm_smart(gift_addr, &QueryMsg::AllReleaseStageStates {}).unwrap();
+            println!("RELEASES - {:?}", rel.releases);
+            println!("TREASURY BAL - {:?}", app.wrap().query_balance(treasury_addr, "boot").unwrap());
+            println!("RELEASES - {:?}", "-------------");
         }
-        let info: StateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::State {}).unwrap();
-        println!("STATE - {:?}", info);
 
-        let res: AllReleaseStageStateResponse = app.wrap().query_wasm_smart(
-            &gift_addr,
-            &QueryMsg::AllReleaseStageState {start:Some(7u8), limit:Some(2u8)}
-        ).unwrap();
-        println!("RELEASES - {:?}", res);
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 0, 5, 0, 5);
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 5, 10, 0, 10);
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 10, 15, 0, 15);
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 15, 19, 0, 19);
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 19, 20, 0, 20);
+
+        for i in 0..20 {
+            println!("PASSPORT #{:?} BAL- {:?}", i, app.wrap().query_balance(&Addr::unchecked(data[i].bostrom_address.clone()), "boot").unwrap());
+        }
     }
 
     #[test]
