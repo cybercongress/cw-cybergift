@@ -111,7 +111,9 @@
           ],
           "properties": {
             "stage": {
-              "$ref": "#/definitions/Uint64"
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
             }
           }
         }
@@ -121,38 +123,14 @@
     {
       "type": "object",
       "required": [
-        "all_release_stage_state"
+        "all_release_stage_states"
       ],
       "properties": {
-        "all_release_stage_state": {
-          "type": "object",
-          "properties": {
-            "limit": {
-              "type": [
-                "integer",
-                "null"
-              ],
-              "format": "uint8",
-              "minimum": 0.0
-            },
-            "start": {
-              "type": [
-                "integer",
-                "null"
-              ],
-              "format": "uint8",
-              "minimum": 0.0
-            }
-          }
+        "all_release_stage_states": {
+          "type": "object"
         }
       },
       "additionalProperties": false
     }
-  ],
-  "definitions": {
-    "Uint64": {
-      "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
-      "type": "string"
-    }
-  }
+  ]
 }

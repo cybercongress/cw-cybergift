@@ -14,7 +14,7 @@ use crate::state::{Config, CONFIG};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
-const CONSTITUTION: &str = "QmcHB9GKHAKCLQhmSj71qNJhENJJg8Gymd1PvvsCQBhG7M";
+const CONSTITUTION: &str = "QmcHB9GKHAKCLQhmSj71qNJhENJJg8Gymd1PvvsCQBhG7M"; // set QmRX8qYgeZoYM3M5zzQaWEpVFdpin6FvVXvp6RPQK3oufV for test run
 pub const CYBERSPACE_ID_MSG: u64 = 420;
 
 pub fn execute_execute(

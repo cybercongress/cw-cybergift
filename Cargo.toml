@@ -1,18 +1,6 @@
 [workspace]
 members = ["contracts/*"]
 
-[profile.release.package.cw-cyber-gift]
-codegen-units = 1
-incremental = false
-
-[profile.release.package.cw-cyber-passport]
-codegen-units = 1
-incremental = false
-
-[profile.release.package.cw-cyber-subgraph]
-codegen-units = 1
-incremental = false
-
 [profile.release]
 rpath = false
 lto = true

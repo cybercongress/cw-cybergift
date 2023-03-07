@@ -1,22 +1,11 @@
 [package]
 name = "cw-cyber-gift"
-version = "1.0.0"
+version = "2.0.0"
 authors = ["CyberHead"]
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-
-[profile.release]
-rpath = false
-lto = true
-overflow-checks = true
-opt-level = 3
-debug = false
-debug-assertions = false
-codegen-units = 1
-incremental = false
-panic = 'abort'
 
 [features]
 # for more explicit tests, cargo test --features=backtraces
@@ -44,6 +33,7 @@ sha2 = { version = "0.9.5", default-features = false }
 semver = "1"
 
 [dev-dependencies]
+csv = "1.1"
 cosmwasm-schema = { version = "1.0.0" }
 cw-multi-test = { version = "0.13.4" }
 cw1-whitelist = { version = "0.13.4" }
