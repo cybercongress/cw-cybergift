@@ -1,18 +1,15 @@
-use cosmwasm_std::{Addr, attr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty, Env, MessageInfo, StdResult, to_binary, Uint128, Uint64, WasmMsg};
+use cosmwasm_std::{attr, BankMsg, Coin, CosmosMsg, DepsMut, Empty, Env, MessageInfo, StdResult, to_binary, Uint128, Uint64, WasmMsg};
 
 use crate::error::ContractError;
 use crate::helpers::{update_coefficient, verify_merkle_proof};
-use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE, ClaimState, STATE, RELEASE_INFO};
-use cw_utils::{Expiration, DAY};
-use std::ops::{Add, Mul};
+use crate::state::{CLAIM, CONFIG, MERKLE_ROOT, ClaimState, STATE};
+use std::ops::{Add};
 use cw_cyber_passport::msg::{QueryMsg as PassportQueryMsg};
 use crate::msg::{AddressResponse, SignatureResponse};
 use cw1_subkeys::msg::{ExecuteMsg as Cw1ExecuteMsg};
 use cyber_std::CyberMsgWrapper;
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
-
-const RELEASE_STAGES: u64 = 90;
 
 pub fn execute_execute(
     deps: DepsMut,
@@ -129,8 +126,6 @@ pub fn execute_register_merkle_root(
     ]))
 }
 
-const CLAIM_BOUNTY: u128 =  100000;
-
 pub fn execute_claim(
     deps: DepsMut,
     _env: Env,
@@ -189,19 +184,6 @@ pub fn execute_claim(
         }
     )?;
 
-    let release_state = ReleaseState {
-        address: Addr::unchecked(res.clone().address),
-        balance_claim: claim_amount.checked_sub(Uint128::new(CLAIM_BOUNTY))?,
-        stage: Uint64::zero(),
-        stage_expiration: Expiration::Never {},
-    };
-
-    RELEASE.save(
-        deps.storage,
-        gift_claiming_address.clone(),
-        &release_state,
-    )?;
-
     STATE.update(deps.storage, |mut stt| -> StdResult<_> {
         stt.claims = stt.claims.add(Uint64::new(1));
         Ok(stt)
@@ -209,125 +191,25 @@ pub fn execute_claim(
 
     // send funds from treasury controlled by Congress
     Ok(Response::new()
-       .add_message(WasmMsg::Execute {
-           contract_addr: config.treasury_addr.to_string(),
-           msg: to_binary(&Cw1ExecuteMsg::Execute::<Empty> {
-               msgs: vec![
-                   CosmosMsg::Bank(BankMsg::Send {
-                       to_address: res.address.clone(),
-                       amount: vec![Coin {
-                           denom: config.allowed_native,
-                           amount: Uint128::new(CLAIM_BOUNTY),
-                       }],
-                   }).into()
-               ]})?,
-           funds: vec![]
-       })
-       .add_attributes(vec![
-           attr("action", "claim"),
-           attr("original", gift_claiming_address),
-           attr("target", res.address),
-           attr("amount", claim_amount),
-       ])
-    )
-}
-
-pub fn execute_release(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    mut gift_address: String
-) -> Result<Response, ContractError> {
-    gift_address = gift_address.to_lowercase();
-
-    let claimed = CLAIM.may_load(deps.storage, gift_address.clone())?;
-    if claimed.is_none() {
-        return Err(ContractError::NotClaimed {});
-    }
-
-    let config = CONFIG.load(deps.storage)?;
-    let state = STATE.load(deps.storage)?;
-    if state.claims < config.target_claim {
-        return Err(ContractError::NotActivated {});
-    }
-
-    let mut release_state = RELEASE.load(deps.storage, gift_address.clone())?;
-
-    if release_state.address != info.sender {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    if release_state.balance_claim.is_zero() {
-        return Err(ContractError::GiftReleased {});
-    }
-
-    let amount: Uint128;
-    if release_state.stage.is_zero() {
-        // first claim, amount 10% of claim
-        amount = release_state
-            .balance_claim
-            .mul(Decimal::percent(10));
-        release_state.stage_expiration = DAY.after(&env.block);
-        release_state.stage = Uint64::new(RELEASE_STAGES);
-    } else {
-        if release_state.stage_expiration.is_expired(&env.block) {
-            // last claim, amount is rest
-            if release_state.stage.u64() == 1 {
-                amount = release_state.balance_claim;
-                release_state.stage_expiration = Expiration::Never {};
-                release_state.stage = Uint64::zero();
-            } else {
-                // amount is equal during all intermediate stages
-                amount = release_state
-                    .balance_claim
-                    .mul(Decimal::from_ratio(1u128, release_state.stage));
-                release_state.stage_expiration = DAY.after(&env.block);
-                release_state.stage = release_state.stage.checked_sub(Uint64::new(1))?;
-            }
-        } else {
-            return Err(ContractError::StageReleased {});
-        }
-    }
-
-    release_state.balance_claim = release_state.balance_claim - amount;
-
-    RELEASE_INFO.update(deps.storage, release_state.stage.u64(), |rls: Option<Uint64>| -> StdResult<Uint64> {
-        Ok(rls.unwrap_or_default().add(Uint64::new(1)))
-    })?;
-
-    RELEASE.save(
-        deps.storage,
-        gift_address.clone(),
-        &release_state,
-    )?;
-
-    STATE.update(deps.storage, |mut stt| -> StdResult<_> {
-        stt.releases = stt.releases.add(Uint64::new(1));
-        Ok(stt)
-    })?;
-
-    // send funds from treasury controlled by Congress
-    Ok(Response::new()
-       .add_message(WasmMsg::Execute {
-           contract_addr: config.treasury_addr.to_string(),
-           msg: to_binary(&Cw1ExecuteMsg::Execute::<Empty> {
-               msgs: vec![
-                   CosmosMsg::Bank(BankMsg::Send {
-                   to_address: release_state.clone().address.into(),
-                   amount: vec![Coin {
-                       denom: config.allowed_native,
-                       amount: amount,
-                   }],
-               }).into()
-           ]})?,
-           funds: vec![]
-       })
-       .add_attributes(vec![
-           attr("action", "release"),
-           attr("address", release_state.clone().address.to_string()),
-           attr("gift_address", gift_address),
-           attr("stage", release_state.stage.to_string()),
-           attr("amount", amount),
-       ])
+        .add_message(WasmMsg::Execute {
+            contract_addr: config.treasury_addr.to_string(),
+            msg: to_binary(&Cw1ExecuteMsg::Execute::<Empty> {
+                msgs: vec![
+                    CosmosMsg::Bank(BankMsg::Send {
+                        to_address: res.clone().address,
+                        amount: vec![Coin {
+                            denom: config.allowed_native,
+                            amount: claim_amount,
+                        }],
+                    }).into()
+                ]})?,
+            funds: vec![]
+        })
+        .add_attributes(vec![
+            attr("action", "release"),
+            attr("address", res.clone().address),
+            attr("gift_address", gift_claiming_address),
+            attr("amount", claim_amount),
+        ])
     )
 }

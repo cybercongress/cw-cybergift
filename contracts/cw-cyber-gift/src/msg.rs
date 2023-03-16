@@ -2,7 +2,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{CosmosMsg, Decimal, Uint128, Uint64};
-use cw_utils::Expiration;
 use cyber_std::CyberMsgWrapper;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -44,7 +43,6 @@ pub enum ExecuteMsg {
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
     },
-    Release { gift_address: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -55,12 +53,6 @@ pub enum QueryMsg {
     MerkleRoot {},
     IsClaimed { address: String },
     Claim { address: String },
-    ReleaseState { address: String },
-    ReleaseStageState { stage: Uint64 },
-    AllReleaseStageState {
-        start: Option<u8>,
-        limit: Option<u8>,
-    },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -81,7 +73,6 @@ pub struct StateResponse {
     pub current_balance: Uint128,
     pub coefficient: Decimal,
     pub claims: Uint64,
-    pub releases: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -99,24 +90,6 @@ pub struct IsClaimedResponse {
 pub struct ClaimResponse {
     pub claim: Uint128,
     pub multiplier: Decimal
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ReleaseStateResponse {
-    pub address: String,
-    pub balance_claim: Uint128,
-    pub stage: Uint64,
-    pub stage_expiration: Expiration,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ReleaseStageStateResponse {
-    pub releases: Uint64,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct AllReleaseStageStateResponse {
-    pub releases: Vec<Uint64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

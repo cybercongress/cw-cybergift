@@ -5,8 +5,7 @@
   "required": [
     "claims",
     "coefficient",
-    "current_balance",
-    "releases"
+    "current_balance"
   ],
   "properties": {
     "claims": {
@@ -17,9 +16,6 @@
     },
     "current_balance": {
       "$ref": "#/definitions/Uint128"
-    },
-    "releases": {
-      "$ref": "#/definitions/Uint64"
     }
   },
   "definitions": {

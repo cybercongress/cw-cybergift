@@ -25,15 +25,6 @@ pub enum ContractError {
     #[error("Your gift is already claimed")]
     Claimed {},
 
-    #[error("Your gift is not claimed yet")]
-    NotClaimed {},
-
-    #[error("Gift is not activated yet")]
-    NotActivated {},
-
-    #[error("Stage released, wait for the next stage")]
-    StageReleased {},
-
     #[error("Your gift is fully released")]
     GiftReleased {},
 

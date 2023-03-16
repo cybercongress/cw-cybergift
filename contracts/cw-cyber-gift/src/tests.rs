@@ -2,7 +2,7 @@
 mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{attr, from_binary, Binary, Coin, Uint128, Uint64, Empty, Addr, coins, BlockInfo};
-    use crate::msg::{AllReleaseStageStateResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg, ReleaseStageStateResponse, StateResponse};
+    use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg, StateResponse};
     use crate::ContractError;
     use crate::contract::{execute, instantiate, query};
     use cw_multi_test::{next_block, Contract, ContractWrapper, Executor};
@@ -24,10 +24,10 @@ mod tests {
     const CF: Uint128 = Uint128::new(20);
     const TARGET_CLAIM: Uint64 = Uint64::new(2);
 
-    pub fn next_hour(block: &mut BlockInfo) {
-        block.time = block.time.plus_seconds(3600);
-        block.height += 1;
-    }
+    // pub fn next_hour(block: &mut BlockInfo) {
+    //     block.time = block.time.plus_seconds(3600);
+    //     block.height += 1;
+    // }
 
     pub fn contract_gift() -> Box<dyn Contract<CyberMsgWrapper, Empty>> {
         let contract = ContractWrapper::new(
@@ -238,7 +238,7 @@ mod tests {
             &[],
         );
 
-        let _res = app.execute_contract(
+        let res = app.execute_contract(
             Addr::unchecked(CYB1),
             gift_addr.clone(),
             &ExecuteMsg::Claim {
@@ -249,8 +249,9 @@ mod tests {
             },
             &[],
         );
+        println!("{:?}", res);
 
-        let _res = app.execute_contract(
+        let res = app.execute_contract(
             Addr::unchecked(CYB1),
             gift_addr.clone(),
             &ExecuteMsg::Claim {
@@ -261,51 +262,52 @@ mod tests {
             },
             &[],
         );
+        println!("{:?}", res);
 
-        for i in 0..10 {
-            let res = app.execute_contract(
-                Addr::unchecked(CYB1),
-                gift_addr.clone(),
-                &ExecuteMsg::Release {
-                    gift_address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
-                },
-                &[],
-            );
-            println!("Release [ETH][{:?}]- {:?}", i, res);
-
-            let res = app.execute_contract(
-                Addr::unchecked(CYB1),
-                gift_addr.clone(),
-                &ExecuteMsg::Release {
-                    gift_address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
-                },
-                &[],
-            );
-            println!("Release [CMS][{:?}]- {:?}", i, res);
-
-            app.update_block(next_hour);
-        }
+        // for i in 0..10 {
+        //     let res = app.execute_contract(
+        //         Addr::unchecked(CYB1),
+        //         gift_addr.clone(),
+        //         &ExecuteMsg::Release {
+        //             gift_address: "0x0408522089294b8b3f0c9514086e6ae1df00394c".to_string(),
+        //         },
+        //         &[],
+        //     );
+        //     println!("Release [ETH][{:?}]- {:?}", i, res);
+        //
+        //     let res = app.execute_contract(
+        //         Addr::unchecked(CYB1),
+        //         gift_addr.clone(),
+        //         &ExecuteMsg::Release {
+        //             gift_address: "bostrom19nk207agguzdvpj9nqsf4zrjw8mcuu9afun3fv".to_string(),
+        //         },
+        //         &[],
+        //     );
+        //     println!("Release [CMS][{:?}]- {:?}", i, res);
+        //
+        //     app.update_block(next_hour);
+        // }
 
 
         println!("GIFT BAL - {:?}", app.wrap().query_balance(&gift_addr, "boot").unwrap());
         println!("TREASURY BAL - {:?}", app.wrap().query_balance(&treasury_addr, "boot").unwrap());
         println!("PASSPORT #1 BAL- {:?}", app.wrap().query_balance(&Addr::unchecked(CYB1), "boot").unwrap());
 
-        for i in 0..10 {
-            let info: ReleaseStageStateResponse = app.wrap().query_wasm_smart(
-                &gift_addr,
-                &QueryMsg::ReleaseStageState { stage: Uint64::from(1u64) }
-            ).unwrap();
-            println!("STAGE {:?} - RELEASES {:?}", i, info.releases.u64());
-        }
-        let info: StateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::State {}).unwrap();
-        println!("STATE - {:?}", info);
-
-        let res: AllReleaseStageStateResponse = app.wrap().query_wasm_smart(
-            &gift_addr,
-            &QueryMsg::AllReleaseStageState {start:Some(7u8), limit:Some(2u8)}
-        ).unwrap();
-        println!("RELEASES - {:?}", res);
+        // for i in 0..10 {
+        //     let info: ReleaseStageStateResponse = app.wrap().query_wasm_smart(
+        //         &gift_addr,
+        //         &QueryMsg::ReleaseStageState { stage: Uint64::from(1u64) }
+        //     ).unwrap();
+        //     println!("STAGE {:?} - RELEASES {:?}", i, info.releases.u64());
+        // }
+        // let info: StateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::State {}).unwrap();
+        // println!("STATE - {:?}", info);
+        //
+        // let res: AllReleaseStageStateResponse = app.wrap().query_wasm_smart(
+        //     &gift_addr,
+        //     &QueryMsg::AllReleaseStageState {start:Some(7u8), limit:Some(2u8)}
+        // ).unwrap();
+        // println!("RELEASES - {:?}", res);
     }
 
     #[test]

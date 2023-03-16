@@ -6,15 +6,15 @@ use cw2::{get_contract_version, set_contract_version};
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, State, STATE};
-use crate::execute::{execute_claim, execute_execute, execute_register_merkle_root, execute_release, execute_update_owner, execute_update_target, execute_update_treasury};
-use crate::query::{query_all_release_stage_state, query_claim, query_config, query_is_claimed, query_merkle_root, query_release_stage_state, query_release_state, query_state};
+use crate::execute::{execute_claim, execute_execute, execute_register_merkle_root, execute_update_owner, execute_update_target, execute_update_treasury};
+use crate::query::{query_claim, query_config, query_is_claimed, query_merkle_root, query_state};
 use cyber_std::CyberMsgWrapper;
 use semver::Version;
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
 // Version info, for migration info
-const CONTRACT_NAME: &str = "cyber-gift";
+const CONTRACT_NAME: &str = "pussy-gift";
 const CONTRACT_VERSION: &str = "1.0.0";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -45,7 +45,6 @@ pub fn instantiate(
         current_balance: msg.initial_balance,
         coefficient: Decimal::from_ratio(msg.coefficient, 1u128),
         claims: Uint64::zero(),
-        releases: Uint64::zero()
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -79,7 +78,6 @@ pub fn execute(
             gift_amount,
             proof,
         } => execute_claim(deps, env, info, nickname, gift_claiming_address, gift_amount, proof),
-        ExecuteMsg::Release { gift_address } => execute_release(deps, env, info, gift_address),
     }
 }
 
@@ -91,9 +89,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::MerkleRoot {} => to_binary(&query_merkle_root(deps)?),
         QueryMsg::IsClaimed { address } => to_binary(&query_is_claimed(deps, address)?),
         QueryMsg::Claim { address } => to_binary(&query_claim(deps, address)?),
-        QueryMsg::ReleaseState { address } => to_binary(&query_release_state(deps, address)?),
-        QueryMsg::ReleaseStageState { stage } => to_binary(&query_release_stage_state(deps, stage)?),
-        QueryMsg::AllReleaseStageState {start, limit} => to_binary(&query_all_release_stage_state(deps, start, limit)?),
     }
 }
 
