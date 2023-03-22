@@ -285,12 +285,11 @@ pub fn execute_release(
         }
     }
 
-    RELEASES_STATS.update(deps.storage, |mut info| -> StdResult<Vec<u32>> {
-        for i in (release_state.stage.u64())..(state_stage.u128() as u64) {
-            info[i as usize] = info[i as usize] + 1u32;
-        }
-        Ok(info)
-    })?;
+    for i in (release_state.stage.u64())..(state_stage.u128() as u64) {
+        RELEASES_STATS.update(deps.storage, i as u8, |count| -> StdResult<_> {
+            Ok(count.unwrap() + 1u32)
+        })?;
+    }
 
     release_state.stage = Uint64::from(state_stage.u128() as u64);
     release_state.balance_claim = release_state.balance_claim - amount;

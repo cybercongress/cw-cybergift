@@ -1,4 +1,3 @@
-use std::iter;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Decimal, Deps, DepsMut, Env, StdResult, Uint64, MessageInfo, Empty};
@@ -51,7 +50,9 @@ pub fn instantiate(
 
     CONFIG.save(deps.storage, &config)?;
     STATE.save(deps.storage, &state)?;
-    RELEASES_STATS.save(deps.storage, &iter::repeat(0).take(100).collect())?;
+    for i in 0..100 {
+        RELEASES_STATS.save(deps.storage, i as u8, &(0 as u32))?;
+    }
 
     Ok(Response::default())
 }
@@ -125,7 +126,9 @@ pub fn migrate(
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     }
 
-    RELEASES_STATS.save(deps.storage, &iter::repeat(0).take(100).collect())?;
+    for i in 0..100 {
+        RELEASES_STATS.save(deps.storage, i as u8, &(0 as u32))?;
+    }
 
     Ok(Response::new())
 }
