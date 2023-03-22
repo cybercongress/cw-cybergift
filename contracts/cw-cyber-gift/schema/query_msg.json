@@ -112,7 +112,7 @@
           "properties": {
             "stage": {
               "type": "integer",
-              "format": "uint32",
+              "format": "uint8",
               "minimum": 0.0
             }
           }

@@ -1,4 +1,5 @@
 use cosmwasm_std::{Deps, StdResult};
+use cosmwasm_std::Order::Ascending;
 use crate::msg::{AllReleaseStageStateResponse, ClaimResponse, ConfigResponse, IsClaimedResponse, MerkleRootResponse, ReleaseStageStateResponse, ReleaseStateResponse, StateResponse};
 use crate::state::{CLAIM, CONFIG, MERKLE_ROOT, RELEASE, RELEASES_STATS, STATE};
 
@@ -66,16 +67,19 @@ pub fn query_release_state(deps: Deps, address: String) -> StdResult<ReleaseStat
     Ok(resp)
 }
 
-pub fn query_release_stage_state(deps: Deps, stage: u32) -> StdResult<ReleaseStageStateResponse> {
-    let release_stage_state = RELEASES_STATS.load(deps.storage)?;
+pub fn query_release_stage_state(deps: Deps, stage: u8) -> StdResult<ReleaseStageStateResponse> {
+    let release_stage_state = RELEASES_STATS.load(deps.storage, stage as u8)?;
     let resp = ReleaseStageStateResponse {
-        releases: release_stage_state[stage as usize]
+        releases: release_stage_state
     };
     Ok(resp)
 }
 
 pub fn query_all_release_stage_states(deps: Deps) -> StdResult<AllReleaseStageStateResponse> {
-    let all_release_stage_state = RELEASES_STATS.load(deps.storage)?;
+    let all_release_stage_state = RELEASES_STATS
+        .range(deps.storage, None, None, Ascending)
+        .map(|i| i.unwrap().1)
+        .collect();
     let resp = AllReleaseStageStateResponse {
         releases: all_release_stage_state
     };

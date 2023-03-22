@@ -56,7 +56,7 @@ pub enum QueryMsg {
     IsClaimed { address: String },
     Claim { address: String },
     ReleaseState { address: String },
-    ReleaseStageState { stage: u32 },
+    ReleaseStageState { stage: u8 },
     AllReleaseStageStates{}
 }
 
