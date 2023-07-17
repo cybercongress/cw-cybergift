@@ -1,21 +1,22 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Decimal, Deps, DepsMut, Env, StdResult, Uint64, MessageInfo, Empty};
+use cosmwasm_std::{to_binary, Binary, Decimal, Deps, DepsMut, Env, StdResult, Uint64, MessageInfo, Empty, Addr};
 use cw2::{get_contract_version, set_contract_version};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CONFIG, State, STATE};
+use crate::state::{Config, CONFIG, RELEASES_STATS, State, STATE};
 use crate::execute::{execute_claim, execute_execute, execute_register_merkle_root, execute_release, execute_update_owner, execute_update_target, execute_update_treasury};
-use crate::query::{query_all_release_stage_state, query_claim, query_config, query_is_claimed, query_merkle_root, query_release_stage_state, query_release_state, query_state};
+use crate::query::{query_all_release_stage_states, query_claim, query_config, query_is_claimed, query_merkle_root, query_release_stage_state, query_release_state, query_state};
 use cyber_std::CyberMsgWrapper;
 use semver::Version;
+use crate::indexed_referral::{all_ref, all_referred_of, has_ref, ref_of, REFERRALS};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
 // Version info, for migration info
 const CONTRACT_NAME: &str = "cyber-gift";
-const CONTRACT_VERSION: &str = "1.0.0";
+const CONTRACT_VERSION: &str = "2.0.0";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -50,6 +51,9 @@ pub fn instantiate(
 
     CONFIG.save(deps.storage, &config)?;
     STATE.save(deps.storage, &state)?;
+    for i in 0..100 {
+        RELEASES_STATS.save(deps.storage, i as u8, &(0 as u32))?;
+    }
 
     Ok(Response::default())
 }
@@ -78,7 +82,8 @@ pub fn execute(
             gift_claiming_address,
             gift_amount,
             proof,
-        } => execute_claim(deps, env, info, nickname, gift_claiming_address, gift_amount, proof),
+            referral,
+        } => execute_claim(deps, env, info, nickname, gift_claiming_address, gift_amount, proof, referral),
         ExecuteMsg::Release { gift_address } => execute_release(deps, env, info, gift_address),
     }
 }
@@ -93,7 +98,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Claim { address } => to_binary(&query_claim(deps, address)?),
         QueryMsg::ReleaseState { address } => to_binary(&query_release_state(deps, address)?),
         QueryMsg::ReleaseStageState { stage } => to_binary(&query_release_stage_state(deps, stage)?),
-        QueryMsg::AllReleaseStageState {start, limit} => to_binary(&query_all_release_stage_state(deps, start, limit)?),
+        QueryMsg::AllReleaseStageStates {} => to_binary(&query_all_release_stage_states(deps)?),
+        // TODO refactor queries
+        QueryMsg::ReferralOf { address } => to_binary(&ref_of(deps.storage, &Addr::unchecked(address))?),
+        QueryMsg::HasReferral { address } => to_binary(&has_ref(deps.storage, &Addr::unchecked(address))?),
+        QueryMsg::AllReferrals {
+            start_after, limit, is_ascending,
+        } => to_binary(&all_ref(deps.storage, start_after, limit, is_ascending)),
+        QueryMsg::AllReferredOf {
+            address, start_after, limit, is_ascending,
+        } => to_binary(&all_referred_of(deps.storage, address, start_after, limit, is_ascending)?),
     }
 }
 
@@ -121,6 +135,10 @@ pub fn migrate(
 
     if storage_version < version {
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    }
+
+    for i in 0..100 {
+        RELEASES_STATS.save(deps.storage, i as u8, &(0 as u32))?;
     }
 
     Ok(Response::new())

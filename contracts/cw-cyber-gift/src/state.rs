@@ -40,6 +40,12 @@ pub struct ClaimState {
     pub multiplier: Decimal,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Refer {
+    pub referrer: Addr,
+    pub referred: Addr,
+}
+
 pub const CONFIG_KEY: &str = "config";
 pub const CONFIG: Item<Config> = Item::new(CONFIG_KEY);
 
@@ -55,5 +61,7 @@ pub const CLAIM: Map<String, ClaimState> = Map::new(CLAIM_PREFIX);
 pub const RELEASE_PREFIX: &str = "release";
 pub const RELEASE: Map<String, ReleaseState> = Map::new(RELEASE_PREFIX);
 
-pub const RELEASE_INFO_PREFIX: &str = "release_info";
-pub const RELEASE_INFO: Map<u64, Uint64> = Map::new(RELEASE_INFO_PREFIX);
+pub const RELEASES_STATS_PREFIX: &str = "releases_stats";
+pub const RELEASES_STATS: Map<u8, u32> = Map::new(RELEASES_STATS_PREFIX);
+
+pub const REFERRALS_PREFIX: &str = "referrals";

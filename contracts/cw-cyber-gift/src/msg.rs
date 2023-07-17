@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{CosmosMsg, Decimal, Uint128, Uint64};
+use cosmwasm_std::{Addr, CosmosMsg, Decimal, Uint128, Uint64};
 use cw_utils::Expiration;
 use cyber_std::CyberMsgWrapper;
 
@@ -43,6 +43,7 @@ pub enum ExecuteMsg {
         gift_amount: Uint128,
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
+        referral: Option<String>,
     },
     Release { gift_address: String },
 }
@@ -56,11 +57,21 @@ pub enum QueryMsg {
     IsClaimed { address: String },
     Claim { address: String },
     ReleaseState { address: String },
-    ReleaseStageState { stage: Uint64 },
-    AllReleaseStageState {
-        start: Option<u8>,
-        limit: Option<u8>,
+    ReleaseStageState { stage: u8 },
+    AllReleaseStageStates{},
+    ReferralOf { address: String },
+    HasReferral { address: String },
+    AllReferrals {
+        start_after: Option<Addr>,
+        limit: Option<u64>,
+        is_ascending: Option<bool>,
     },
+    AllReferredOf {
+        address: Addr,
+        start_after: Option<Addr>,
+        limit: Option<u64>,
+        is_ascending: Option<bool>,
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -111,12 +122,12 @@ pub struct ReleaseStateResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReleaseStageStateResponse {
-    pub releases: Uint64,
+    pub releases: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct AllReleaseStageStateResponse {
-    pub releases: Vec<Uint64>,
+    pub releases: Vec<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
