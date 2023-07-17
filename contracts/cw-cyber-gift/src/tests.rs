@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use std::borrow::BorrowMut;
+    use std::cell::Ref;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{attr, from_binary, Binary, Coin, Uint128, Uint64, Empty, Addr, coins};
     use crate::msg::{AllReleaseStageStateResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg};
@@ -12,6 +13,7 @@ mod tests {
     use cyber_std_test::CyberApp;
     use csv;
     use serde::Deserialize;
+    use crate::state::Refer;
 
     const NATIVE_TOKEN: &str = "boot";
     const OWNER: &str = "owner";
@@ -258,7 +260,7 @@ mod tests {
             );
         }
 
-        fn claim_and_release(app: &mut CyberApp, gift_addr: &Addr, treasury_addr: &Addr, data: &Vec<GiftData>, a: usize, b: usize, c: usize, d: usize) {
+        fn claim_and_release(app: &mut CyberApp, gift_addr: &Addr, treasury_addr: &Addr, data: &Vec<GiftData>, a: usize, b: usize, c: usize, d: usize, referral: Option<String>) {
             for i in a..b {
                 let _ =app.execute_contract(
                     Addr::unchecked(data[i].bostrom_address.clone()),
@@ -267,7 +269,8 @@ mod tests {
                         nickname: data[i].nickname.clone(),
                         gift_claiming_address: data[i].cosmos_address.clone(),
                         gift_amount: Uint128::from(data[i].amount.clone()),
-                        proof: data[i].cosmos_proof_vec()
+                        proof: data[i].cosmos_proof_vec(),
+                        referral: referral.clone(),
                     }, &[],
                 );
 
@@ -278,7 +281,8 @@ mod tests {
                         nickname: data[i].nickname.clone(),
                         gift_claiming_address: data[i].ethereum_address.clone(),
                         gift_amount: Uint128::from(data[i].amount.clone()),
-                        proof: data[i].ethereum_proof_vec()
+                        proof: data[i].ethereum_proof_vec(),
+                        referral: referral.clone(),
                     }, &[],
                 );
 
@@ -325,15 +329,32 @@ mod tests {
             println!("RELEASES - {:?}", "-------------");
         }
 
-        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 0, 5, 0, 5);
-        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 5, 10, 0, 10);
-        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 10, 15, 0, 15);
-        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 15, 19, 0, 19);
-        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 19, 20, 0, 20);
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 0, 5, 0, 5, Some(String::from("bob")));
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 5, 10, 0, 10, Some(String::from("bob")));
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 10, 15, 0, 15, None);
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 15, 19, 0, 19, None);
+        claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 19, 20, 0, 20, None);
 
         for i in 0..20 {
             println!("PASSPORT #{:?} BAL- {:?}", i, app.wrap().query_balance(&Addr::unchecked(data[i].bostrom_address.clone()), "boot").unwrap());
         }
+
+        let rel: Vec<Refer> = app.wrap().query_wasm_smart(gift_addr.clone(), &QueryMsg::AllReferrals {
+            start_after: None,
+            limit: None,
+            is_ascending: None
+        }).unwrap();
+        println!("ALL REFERRALS - {:?}", rel.len());
+
+        let rel: Vec<Addr> = app.wrap().query_wasm_smart(gift_addr.clone(), &QueryMsg::AllReferredOf {
+            address: Addr::unchecked(String::from("bob")),
+            start_after: None,
+            limit: None,
+            is_ascending: None
+        }).unwrap();
+        println!("REFERRALS BOB - {:?}", rel.len());
+        println!("REFERRAL BOB BAL - {:?}", app.wrap().query_balance("bob", "boot").unwrap());
+        println!("COMMUNITY POOL BAL - {:?}", app.wrap().query_balance("alice", "boot").unwrap());
     }
 
     #[test]

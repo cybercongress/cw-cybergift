@@ -9,8 +9,12 @@ use cw_cyber_passport::msg::{QueryMsg as PassportQueryMsg};
 use crate::msg::{AddressResponse, SignatureResponse};
 use cw1_subkeys::msg::{ExecuteMsg as Cw1ExecuteMsg};
 use cyber_std::CyberMsgWrapper;
+use crate::indexed_referral::{has_ref, ref_chains, REFERRALS, set_ref};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
+
+const CLAIM_BOUNTY: u128 =  100000;
+const COMMUNITY_POOL: &str = "alice";
 
 pub fn execute_execute(
     deps: DepsMut,
@@ -127,8 +131,6 @@ pub fn execute_register_merkle_root(
     ]))
 }
 
-const CLAIM_BOUNTY: u128 =  100000;
-
 pub fn execute_claim(
     deps: DepsMut,
     _env: Env,
@@ -137,6 +139,7 @@ pub fn execute_claim(
     mut gift_claiming_address: String,
     gift_amount: Uint128,
     proof: Vec<String>,
+    referral: Option<String>,
 ) -> Result<Response, ContractError> {
     gift_claiming_address = gift_claiming_address.to_lowercase();
 
@@ -204,6 +207,18 @@ pub fn execute_claim(
         stt.claims = stt.claims.add(Uint64::new(1));
         Ok(stt)
     })?;
+
+    if referral.is_some() {
+        if deps.api.addr_validate(&referral.clone().unwrap())?.ne(&Addr::unchecked(res.address.clone())) {
+            if has_ref(deps.storage, &Addr::unchecked(res.address.clone()))?.eq(&false) {
+                set_ref(
+                    deps.storage,
+                    &Addr::unchecked(res.address.clone()),
+                    &Addr::unchecked(referral.unwrap())
+                )?;
+            };
+        }
+    }
 
     // send funds from treasury controlled by Congress
     Ok(Response::new()
@@ -305,20 +320,52 @@ pub fn execute_release(
         Ok(stt)
     })?;
 
-    // send funds from treasury controlled by Congress
+    let mut messages: Vec<CosmosMsg> = vec![];
+    let amount_gift = Decimal::percent(80u64).mul(amount);
+    messages.push(
+        CosmosMsg::from(BankMsg::Send {
+            to_address: release_state.clone().address.into(),
+            amount: vec![Coin {
+                denom: config.clone().allowed_native,
+                amount: amount_gift,
+            }],
+        })
+    );
+
+    if has_ref(deps.storage, &release_state.clone().address)?.eq(&true) {
+        let chain = ref_chains(deps.storage, &release_state.clone().address, Some(4))?;
+        let amount_referral = amount
+            .sub(amount_gift).
+            mul(Decimal::from_ratio(Uint128::from(1u64), Uint128::from(chain.len() as u64)));
+        for addr in chain.into_iter() {
+            messages.push(CosmosMsg::from(BankMsg::Send {
+                to_address: addr.into_string(),
+                amount: vec![Coin {
+                    denom: config.clone().allowed_native,
+                    amount: amount_referral,
+                }]
+            }))
+        }
+    } else {
+        let amount_pool = amount.sub(amount_gift);
+        messages.push(
+            CosmosMsg::from(BankMsg::Send {
+                to_address: String::from(COMMUNITY_POOL),
+                amount: vec![Coin {
+                    denom: config.clone().allowed_native,
+                    amount: amount_pool,
+                }],
+            })
+        );
+    }
+
+    // HOW design affected with passport mapped to address (what if address will change)
     Ok(Response::new()
        .add_message(WasmMsg::Execute {
            contract_addr: config.treasury_addr.to_string(),
            msg: to_binary(&Cw1ExecuteMsg::Execute::<Empty> {
-               msgs: vec![
-                   CosmosMsg::Bank(BankMsg::Send {
-                   to_address: release_state.clone().address.into(),
-                   amount: vec![Coin {
-                       denom: config.allowed_native,
-                       amount: amount,
-                   }],
-               }).into()
-           ]})?,
+               msgs: messages
+           })?,
            funds: vec![]
        })
        .add_attributes(vec![

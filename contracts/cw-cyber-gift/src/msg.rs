@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{CosmosMsg, Decimal, Uint128, Uint64};
+use cosmwasm_std::{Addr, CosmosMsg, Decimal, Uint128, Uint64};
 use cw_utils::Expiration;
 use cyber_std::CyberMsgWrapper;
 
@@ -43,6 +43,7 @@ pub enum ExecuteMsg {
         gift_amount: Uint128,
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
+        referral: Option<String>,
     },
     Release { gift_address: String },
 }
@@ -57,7 +58,20 @@ pub enum QueryMsg {
     Claim { address: String },
     ReleaseState { address: String },
     ReleaseStageState { stage: u8 },
-    AllReleaseStageStates{}
+    AllReleaseStageStates{},
+    ReferralOf { address: String },
+    HasReferral { address: String },
+    AllReferrals {
+        start_after: Option<Addr>,
+        limit: Option<u64>,
+        is_ascending: Option<bool>,
+    },
+    AllReferredOf {
+        address: Addr,
+        start_after: Option<Addr>,
+        limit: Option<u64>,
+        is_ascending: Option<bool>,
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Decimal, Deps, DepsMut, Env, StdResult, Uint64, MessageInfo, Empty};
+use cosmwasm_std::{to_binary, Binary, Decimal, Deps, DepsMut, Env, StdResult, Uint64, MessageInfo, Empty, Addr};
 use cw2::{get_contract_version, set_contract_version};
 
 use crate::error::ContractError;
@@ -10,6 +10,7 @@ use crate::execute::{execute_claim, execute_execute, execute_register_merkle_roo
 use crate::query::{query_all_release_stage_states, query_claim, query_config, query_is_claimed, query_merkle_root, query_release_stage_state, query_release_state, query_state};
 use cyber_std::CyberMsgWrapper;
 use semver::Version;
+use crate::indexed_referral::{all_ref, all_referred_of, has_ref, ref_of, REFERRALS};
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
@@ -81,7 +82,8 @@ pub fn execute(
             gift_claiming_address,
             gift_amount,
             proof,
-        } => execute_claim(deps, env, info, nickname, gift_claiming_address, gift_amount, proof),
+            referral,
+        } => execute_claim(deps, env, info, nickname, gift_claiming_address, gift_amount, proof, referral),
         ExecuteMsg::Release { gift_address } => execute_release(deps, env, info, gift_address),
     }
 }
@@ -97,6 +99,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ReleaseState { address } => to_binary(&query_release_state(deps, address)?),
         QueryMsg::ReleaseStageState { stage } => to_binary(&query_release_stage_state(deps, stage)?),
         QueryMsg::AllReleaseStageStates {} => to_binary(&query_all_release_stage_states(deps)?),
+        // TODO refactor queries
+        QueryMsg::ReferralOf { address } => to_binary(&ref_of(deps.storage, &Addr::unchecked(address))?),
+        QueryMsg::HasReferral { address } => to_binary(&has_ref(deps.storage, &Addr::unchecked(address))?),
+        QueryMsg::AllReferrals {
+            start_after, limit, is_ascending,
+        } => to_binary(&all_ref(deps.storage, start_after, limit, is_ascending)),
+        QueryMsg::AllReferredOf {
+            address, start_after, limit, is_ascending,
+        } => to_binary(&all_referred_of(deps.storage, address, start_after, limit, is_ascending)?),
     }
 }
 
