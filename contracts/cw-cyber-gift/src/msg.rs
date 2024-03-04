@@ -33,6 +33,10 @@ pub enum ExecuteMsg {
     UpdateTarget {
         new_target: Uint64,
     },
+    UpdateCoefficients {
+        new_coefficient_up: Uint128,
+        new_coefficient_down: Uint128,
+    },
     RegisterMerkleRoot {
         /// MerkleRoot is hex-encoded merkle root.
         merkle_root: String,

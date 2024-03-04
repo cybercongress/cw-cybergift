@@ -6,7 +6,7 @@ use cw2::{get_contract_version, set_contract_version};
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, RELEASES_STATS, State, STATE};
-use crate::execute::{execute_claim, execute_execute, execute_register_merkle_root, execute_release, execute_update_owner, execute_update_target, execute_update_treasury};
+use crate::execute::{execute_claim, execute_execute, execute_register_merkle_root, execute_release, execute_update_coefficients, execute_update_owner, execute_update_target, execute_update_treasury};
 use crate::query::{query_all_release_stage_states, query_claim, query_config, query_is_claimed, query_merkle_root, query_release_stage_state, query_release_state, query_state};
 use cyber_std::CyberMsgWrapper;
 use semver::Version;
@@ -15,7 +15,7 @@ type Response = cosmwasm_std::Response<CyberMsgWrapper>;
 
 // Version info, for migration info
 const CONTRACT_NAME: &str = "cyber-gift";
-const CONTRACT_VERSION: &str = "2.0.0";
+const CONTRACT_VERSION: &str = "3.0.0";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -73,6 +73,9 @@ pub fn execute(
         ExecuteMsg::UpdateTarget { new_target } => {
             execute_update_target(deps, env, info, new_target)
         }
+        ExecuteMsg::UpdateCoefficients { new_coefficient_up, new_coefficient_down } => {
+            execute_update_coefficients(deps, env, info, new_coefficient_up, new_coefficient_down)
+        }
         ExecuteMsg::RegisterMerkleRoot { merkle_root } => {
             execute_register_merkle_root(deps, env, info, merkle_root)
         }
@@ -124,10 +127,6 @@ pub fn migrate(
 
     if storage_version < version {
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    }
-
-    for i in 0..100 {
-        RELEASES_STATS.save(deps.storage, i as u8, &(0 as u32))?;
     }
 
     Ok(Response::new())

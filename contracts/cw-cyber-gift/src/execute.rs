@@ -104,6 +104,35 @@ pub fn execute_update_target(
     ]))
 }
 
+pub fn execute_update_coefficients(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    new_coefficient_up: Uint128,
+    new_coefficient_down: Uint128,
+) -> Result<Response, ContractError> {
+    let cfg = CONFIG.load(deps.storage)?;
+    let owner = cfg.clone().owner.ok_or(ContractError::Unauthorized {})?;
+    if info.sender != owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
+        cfg.coefficient_up = new_coefficient_up;
+        cfg.coefficient_down = new_coefficient_down;
+        Ok(cfg)
+    })?;
+    let config = CONFIG.load(deps.storage)?;
+    let mut state = STATE.load(deps.storage)?;
+    update_coefficient(deps.storage, Uint128::zero(), &config, &mut state)?;
+
+    Ok(Response::new().add_attributes(vec![
+        attr("action", "update_coefficients"),
+        attr("new_coefficient_up", new_coefficient_up.to_string()),
+        attr("new_coefficient_down", new_coefficient_down.to_string()),
+    ]))
+}
+
 pub fn execute_register_merkle_root(
     deps: DepsMut,
     _env: Env,

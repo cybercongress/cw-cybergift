@@ -3,7 +3,7 @@ mod tests {
     use std::borrow::BorrowMut;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{attr, from_binary, Binary, Coin, Uint128, Uint64, Empty, Addr, coins};
-    use crate::msg::{AllReleaseStageStateResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg};
+    use crate::msg::{AllReleaseStageStateResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, MerkleRootResponse, QueryMsg, StateResponse};
     use crate::ContractError;
     use crate::contract::{execute, instantiate, query};
     use cw_multi_test::{next_block, Contract, ContractWrapper, Executor};
@@ -12,6 +12,7 @@ mod tests {
     use cyber_std_test::CyberApp;
     use csv;
     use serde::Deserialize;
+    use crate::state::Config;
 
     const NATIVE_TOKEN: &str = "boot";
     const OWNER: &str = "owner";
@@ -328,8 +329,33 @@ mod tests {
         claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 0, 5, 0, 5);
         claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 5, 10, 0, 10);
         claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 10, 15, 0, 15);
+        let _ = app.execute_contract(
+            Addr::unchecked(OWNER),
+            gift_addr.clone(),
+            &ExecuteMsg::UpdateCoefficients {
+                new_coefficient_up: Uint128::new(10),
+                new_coefficient_down: Uint128::new(5),
+            }, &[],
+        );
         claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 15, 19, 0, 19);
         claim_and_release(app.borrow_mut(), &gift_addr, &treasury_addr, &data, 19, 20, 0, 20);
+
+        let res: ConfigResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::Config {}).unwrap();
+        println!("Config - {:?}", res);
+        let res: StateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::State {}).unwrap();
+        println!("State - {:?}", res);
+        let _ = app.execute_contract(
+            Addr::unchecked(OWNER),
+            gift_addr.clone(),
+            &ExecuteMsg::UpdateCoefficients {
+                new_coefficient_up: Uint128::new(5),
+                new_coefficient_down: Uint128::new(2),
+            }, &[],
+        );
+        let res: ConfigResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::Config {}).unwrap();
+        println!("Config - {:?}", res);
+        let res: StateResponse = app.wrap().query_wasm_smart(&gift_addr, &QueryMsg::State {}).unwrap();
+        println!("State - {:?}", res);
 
         for i in 0..20 {
             println!("PASSPORT #{:?} BAL- {:?}", i, app.wrap().query_balance(&Addr::unchecked(data[i].bostrom_address.clone()), "boot").unwrap());
