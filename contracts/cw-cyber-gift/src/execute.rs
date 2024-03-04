@@ -2,17 +2,15 @@ use cosmwasm_std::{Addr, attr, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty
 
 use crate::error::ContractError;
 use crate::helpers::{update_coefficient, verify_merkle_proof};
-use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE, ClaimState, STATE, RELEASE_INFO};
-use cw_utils::{Expiration, DAY};
-use std::ops::{Add, Mul};
+use crate::state::{ReleaseState, CLAIM, CONFIG, MERKLE_ROOT, RELEASE, ClaimState, STATE, RELEASES_STATS};
+use cw_utils::{Expiration};
+use std::ops::{Add, Mul, Sub};
 use cw_cyber_passport::msg::{QueryMsg as PassportQueryMsg};
 use crate::msg::{AddressResponse, SignatureResponse};
 use cw1_subkeys::msg::{ExecuteMsg as Cw1ExecuteMsg};
 use cyber_std::CyberMsgWrapper;
 
 type Response = cosmwasm_std::Response<CyberMsgWrapper>;
-
-const RELEASE_STAGES: u64 = 90;
 
 pub fn execute_execute(
     deps: DepsMut,
@@ -234,7 +232,7 @@ pub fn execute_claim(
 
 pub fn execute_release(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     mut gift_address: String
 ) -> Result<Response, ContractError> {
@@ -247,8 +245,10 @@ pub fn execute_release(
 
     let config = CONFIG.load(deps.storage)?;
     let state = STATE.load(deps.storage)?;
-    if state.claims < config.target_claim {
-        return Err(ContractError::NotActivated {});
+
+    let mut state_stage = Uint128::new(100u128).mul(Decimal::from_ratio(state.claims, config.target_claim));
+    if state_stage.ge(&Uint128::new(100u128)) {
+        state_stage = Uint128::new(100u128);
     }
 
     let mut release_state = RELEASE.load(deps.storage, gift_address.clone())?;
@@ -261,39 +261,38 @@ pub fn execute_release(
         return Err(ContractError::GiftReleased {});
     }
 
-    let amount: Uint128;
+    if release_state.stage.eq(&Uint64::new(state_stage.clone().u128() as u64)) {
+        return Err(ContractError::StageReleased {});
+    }
+
+    if release_state.stage.gt(&Uint64::new(state_stage.clone().u128() as u64)) {
+        return Err(ContractError::Unauthorized {})
+    }
+
+    let amount;
     if release_state.stage.is_zero() {
-        // first claim, amount 10% of claim
         amount = release_state
             .balance_claim
-            .mul(Decimal::percent(10));
-        release_state.stage_expiration = DAY.after(&env.block);
-        release_state.stage = Uint64::new(RELEASE_STAGES);
+            .mul(Decimal::percent(state_stage.u128() as u64));
     } else {
-        if release_state.stage_expiration.is_expired(&env.block) {
-            // last claim, amount is rest
-            if release_state.stage.u64() == 1 {
-                amount = release_state.balance_claim;
-                release_state.stage_expiration = Expiration::Never {};
-                release_state.stage = Uint64::zero();
-            } else {
-                // amount is equal during all intermediate stages
-                amount = release_state
-                    .balance_claim
-                    .mul(Decimal::from_ratio(1u128, release_state.stage));
-                release_state.stage_expiration = DAY.after(&env.block);
-                release_state.stage = release_state.stage.checked_sub(Uint64::new(1))?;
-            }
+        if state_stage.ne(&Uint128::new(100u128)) {
+            amount = CLAIM.load(deps.storage, gift_address.clone())?
+                .claim
+                .sub(Uint128::from(CLAIM_BOUNTY))
+                .mul(Decimal::from_ratio(state_stage.sub(Uint128::from(release_state.stage)), 100u128))
         } else {
-            return Err(ContractError::StageReleased {});
+            amount = release_state.balance_claim;
         }
     }
 
-    release_state.balance_claim = release_state.balance_claim - amount;
+    for i in (release_state.stage.u64())..(state_stage.u128() as u64) {
+        RELEASES_STATS.update(deps.storage, i as u8, |count| -> StdResult<_> {
+            Ok(count.unwrap() + 1u32)
+        })?;
+    }
 
-    RELEASE_INFO.update(deps.storage, release_state.stage.u64(), |rls: Option<Uint64>| -> StdResult<Uint64> {
-        Ok(rls.unwrap_or_default().add(Uint64::new(1)))
-    })?;
+    release_state.stage = Uint64::from(state_stage.u128() as u64);
+    release_state.balance_claim = release_state.balance_claim - amount;
 
     RELEASE.save(
         deps.storage,
