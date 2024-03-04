@@ -88,6 +88,30 @@
     {
       "type": "object",
       "required": [
+        "update_coefficients"
+      ],
+      "properties": {
+        "update_coefficients": {
+          "type": "object",
+          "required": [
+            "new_coefficient_down",
+            "new_coefficient_up"
+          ],
+          "properties": {
+            "new_coefficient_down": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "new_coefficient_up": {
+              "$ref": "#/definitions/Uint128"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "register_merkle_root"
       ],
       "properties": {
